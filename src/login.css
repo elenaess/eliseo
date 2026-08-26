@@ -1,0 +1,878 @@
+/* =========================================================
+   ELÍSEO — LOGIN
+   ========================================================= */
+
+.el-login-page {
+  position: fixed;
+  inset: 0;
+
+  width: 100vw;
+  height: 100dvh;
+
+  padding: 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  box-sizing: border-box;
+
+  background:
+    radial-gradient(
+      circle at 15% 45%,
+      rgba(24, 82, 190, 0.34),
+      transparent 32%
+    ),
+    radial-gradient(
+      circle at 83% 62%,
+      rgba(38, 98, 220, 0.42),
+      transparent 30%
+    ),
+    linear-gradient(
+      145deg,
+      #080d18,
+      #0c1526 48%,
+      #09101d
+    );
+}
+
+
+/* =========================================================
+   LUZES
+   ========================================================= */
+
+.el-login-glow {
+  position: absolute;
+
+  width: 400px;
+  height: 400px;
+
+  z-index: 0;
+
+  border-radius: 50%;
+
+  filter: blur(90px);
+
+  opacity: 0.22;
+
+  pointer-events: none;
+
+  will-change: transform, opacity;
+}
+
+
+.el-login-glow.glow-left {
+  left: -160px;
+  top: 25%;
+
+  background: #1667ff;
+
+  animation:
+    eliseo-login-glow-left
+    5.8s
+    ease-in-out
+    infinite alternate;
+}
+
+
+.el-login-glow.glow-right {
+  right: -140px;
+  bottom: 10%;
+
+  background: #1767ff;
+
+  animation:
+    eliseo-login-glow-right
+    7.2s
+    ease-in-out
+    infinite alternate;
+}
+
+
+/* =========================================================
+   CARTÃO
+   ========================================================= */
+
+.el-login-card {
+  position: relative;
+
+  z-index: 2;
+
+  width: 460px;
+
+  max-width:
+    calc(100vw - 40px);
+
+  max-height:
+    calc(100dvh - 32px);
+
+  padding:
+    22px
+    34px
+    20px;
+
+  box-sizing: border-box;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+
+  background:
+    linear-gradient(
+      145deg,
+      rgba(22, 33, 51, 0.95),
+      rgba(14, 23, 37, 0.96)
+    );
+
+  border:
+    1px solid
+    rgba(133, 151, 181, 0.32);
+
+  border-radius: 20px;
+
+  box-shadow:
+    0 25px 70px
+      rgba(0, 0, 0, 0.42);
+
+  backdrop-filter:
+    blur(24px);
+
+  scrollbar-width: none;
+}
+
+
+.el-login-card::-webkit-scrollbar {
+  display: none;
+}
+
+
+/* =========================================================
+   MARCA
+   ========================================================= */
+
+.el-login-brand {
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   LOGO
+   ========================================================= */
+
+.el-login-logo-image {
+  width: 82px;
+  height: 82px;
+
+  margin-bottom: 6px;
+
+  object-fit: contain;
+
+  display: block;
+}
+
+
+.el-login-brand h1 {
+  margin: 0;
+
+  color: #f1f4f8;
+
+  font-size: 35px;
+  font-weight: 400;
+
+  line-height: 1.1;
+}
+
+
+.el-login-brand p {
+  margin:
+    4px
+    0
+    17px;
+
+  color: #939fb1;
+
+  font-size: 14px;
+}
+
+
+/* =========================================================
+   FORMULÁRIO
+   ========================================================= */
+
+.el-login-fields {
+  display: flex;
+  flex-direction: column;
+}
+
+
+.el-login-fields label {
+  margin:
+    0
+    0
+    6px;
+
+  color: #b7c0cf;
+
+  font-size: 13px;
+}
+
+
+.el-login-fields
+label:not(:first-child) {
+  margin-top: 12px;
+}
+
+
+/* =========================================================
+   INPUTS
+   ========================================================= */
+
+.el-login-input {
+  width: 100%;
+  height: 46px;
+
+  padding:
+    0
+    13px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  box-sizing: border-box;
+
+  background:
+    rgba(12, 21, 35, 0.72);
+
+  border:
+    1px solid
+    #3f4b61;
+
+  border-radius: 9px;
+
+  color: #909caf;
+}
+
+
+.el-login-input:focus-within {
+  border-color: #397dff;
+
+  box-shadow:
+    0
+    0
+    0
+    3px
+    rgba(52, 117, 255, 0.08);
+}
+
+
+.el-login-input input {
+  min-width: 0;
+
+  flex: 1;
+
+  height: 100%;
+
+  padding: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 15px;
+}
+
+
+.el-login-input input::placeholder {
+  color: #778497;
+}
+
+
+.el-login-input svg {
+  width: 19px;
+  height: 19px;
+
+  flex-shrink: 0;
+}
+
+
+.el-login-eye {
+  width: 30px;
+  height: 30px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+
+  color: #8e99aa;
+
+  border: 0;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   ERRO
+   ========================================================= */
+
+.el-login-error {
+  margin-top: 8px;
+
+  padding:
+    7px
+    9px;
+
+  background:
+    rgba(91, 41, 58, 0.42);
+
+  color: #ffacba;
+
+  border:
+    1px solid
+    rgba(255, 118, 143, 0.18);
+
+  border-radius: 7px;
+
+  font-size: 11px;
+
+  text-align: center;
+}
+
+
+/* =========================================================
+   BOTÃO PRINCIPAL
+   ========================================================= */
+
+.el-login-submit {
+  width: 100%;
+  height: 46px;
+
+  margin-top: 15px;
+
+  background:
+    linear-gradient(
+      110deg,
+      #3478e5,
+      #2871ee
+    );
+
+  color: white;
+
+  border: 0;
+  border-radius: 9px;
+
+  font-size: 15px;
+  font-weight: 500;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 9px 20px
+    rgba(20, 89, 224, 0.16);
+}
+
+
+.el-login-submit:hover {
+  filter: brightness(1.08);
+}
+
+
+.el-login-submit:disabled {
+  opacity: 0.55;
+
+  cursor: default;
+}
+
+
+/* =========================================================
+   ESQUECI MINHA SENHA
+   ========================================================= */
+
+.el-login-forgot {
+  margin:
+    6px
+    auto
+    0;
+
+  padding: 2px;
+
+  background: transparent;
+
+  color: #71829e;
+
+  border: 0;
+
+  font-size: 10px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   DIVISOR
+   ========================================================= */
+
+.el-login-divider {
+  margin:
+    13px
+    0
+    12px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+}
+
+
+.el-login-divider i {
+  flex: 1;
+
+  height: 1px;
+
+  background: #424e62;
+}
+
+
+.el-login-divider span {
+  color: #929eaf;
+
+  font-size: 11px;
+
+  white-space: nowrap;
+}
+
+
+/* =========================================================
+   LOGINS SOCIAIS
+   ========================================================= */
+
+.el-login-socials {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 21px;
+}
+
+
+.el-login-socials button {
+  width: 46px;
+  height: 46px;
+
+  padding: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    rgba(15, 25, 40, 0.75);
+
+  color: white;
+
+  border:
+    1px solid
+    #445167;
+
+  border-radius: 50%;
+
+  cursor: pointer;
+
+  transition:
+    0.15s ease;
+}
+
+
+.el-login-socials button:hover {
+  transform:
+    translateY(-2px);
+
+  background: #182438;
+
+  border-color: #61708a;
+}
+
+
+/* =========================================================
+   GOOGLE
+   ========================================================= */
+
+.el-login-socials
+.google {
+  color: #4285f4;
+
+  font-family:
+    Arial,
+    sans-serif;
+
+  font-size: 23px;
+  font-weight: 700;
+}
+
+
+/* =========================================================
+   DISCORD
+   ========================================================= */
+
+.el-login-socials
+.discord span {
+  color: #6978f5;
+
+  font-size: 26px;
+  font-weight: 800;
+}
+
+
+/* =========================================================
+   GITHUB
+   ========================================================= */
+
+.github-css-logo {
+  width: 27px;
+  height: 27px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #f2f2f2;
+
+  color: #10141d;
+
+  border-radius: 50%;
+
+  font-size: 9px;
+  font-weight: 900;
+}
+
+
+/* =========================================================
+   ROBLOX
+   ========================================================= */
+
+.el-login-socials
+.roblox i {
+  position: relative;
+
+  width: 23px;
+  height: 23px;
+
+  display: block;
+
+  background: white;
+
+  transform:
+    rotate(15deg);
+}
+
+
+.el-login-socials
+.roblox i::after {
+  content: "";
+
+  position: absolute;
+
+  width: 8px;
+  height: 8px;
+
+  left: 50%;
+  top: 50%;
+
+  transform:
+    translate(
+      -50%,
+      -50%
+    );
+
+  background: #151e2d;
+}
+
+
+/* =========================================================
+   CRIAR CONTA
+   ========================================================= */
+
+.el-login-switch {
+  width: 100%;
+
+  margin-top: 11px;
+
+  padding: 2px;
+
+  background: transparent;
+
+  color: #71829e;
+
+  border: 0;
+
+  font-size: 10px;
+
+  cursor: pointer;
+
+  text-align: center;
+}
+
+
+.el-login-switch:hover {
+  color: #a9b7cd;
+}
+
+
+/* =========================================================
+   NOTEBOOK / TELA BAIXA
+   ========================================================= */
+
+@media (max-height: 700px) {
+
+  .el-login-page {
+    padding: 10px;
+  }
+
+
+  .el-login-card {
+    max-height:
+      calc(100dvh - 20px);
+
+    padding:
+      15px
+      30px
+      14px;
+  }
+
+
+  .el-login-brand h1 {
+    font-size: 30px;
+  }
+
+
+  .el-login-brand p {
+    margin-bottom: 11px;
+
+    font-size: 12px;
+  }
+
+
+  .el-login-fields
+  label:not(:first-child) {
+    margin-top: 8px;
+  }
+
+
+  .el-login-input {
+    height: 41px;
+  }
+
+
+  .el-login-submit {
+    height: 41px;
+
+    margin-top: 10px;
+  }
+
+
+  .el-login-divider {
+    margin:
+      9px
+      0;
+  }
+
+
+  .el-login-socials button {
+    width: 40px;
+    height: 40px;
+  }
+
+
+  .el-login-switch {
+    margin-top: 7px;
+  }
+
+}
+
+
+/* =========================================================
+   MOBILE
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+  .el-login-page {
+    padding: 12px;
+  }
+
+
+  .el-login-card {
+    width: 100%;
+
+    max-width: 430px;
+
+    max-height:
+      calc(100dvh - 24px);
+
+    padding:
+      20px
+      22px
+      18px;
+  }
+
+
+  .el-login-socials {
+    gap: 15px;
+  }
+
+}
+
+/* =========================================================
+   LOGIN — MOVIMENTO DAS LUZES
+   Uma única implementação, sem sobrescritas duplicadas.
+   ========================================================= */
+
+@keyframes eliseo-login-glow-left {
+  0% {
+    transform:
+      translate3d(0, -15px, 0)
+      scale(1);
+
+    opacity: 0.22;
+  }
+
+  35% {
+    transform:
+      translate3d(125px, -35px, 0)
+      scale(1.12);
+
+    opacity: 0.34;
+  }
+
+  70% {
+    transform:
+      translate3d(220px, 75px, 0)
+      scale(0.96);
+
+    opacity: 0.42;
+  }
+
+  100% {
+    transform:
+      translate3d(95px, 155px, 0)
+      scale(1.1);
+
+    opacity: 0.28;
+  }
+}
+
+
+@keyframes eliseo-login-glow-right {
+  0% {
+    transform:
+      translate3d(0, 10px, 0)
+      scale(1);
+
+    opacity: 0.22;
+  }
+
+  35% {
+    transform:
+      translate3d(-145px, -45px, 0)
+      scale(1.13);
+
+    opacity: 0.38;
+  }
+
+  70% {
+    transform:
+      translate3d(-225px, -120px, 0)
+      scale(0.95);
+
+    opacity: 0.43;
+  }
+
+  100% {
+    transform:
+      translate3d(-80px, -175px, 0)
+      scale(1.08);
+
+    opacity: 0.3;
+  }
+}
+
+
+/* Fallback: se o Login.tsx não tiver os elementos .el-login-glow,
+   as mesmas luzes são criadas aqui sem duplicar o efeito. */
+
+.el-login-page {
+  isolation: isolate;
+}
+
+.el-login-page:not(:has(.el-login-glow))::before,
+.el-login-page:not(:has(.el-login-glow))::after {
+  content: "";
+
+  position: absolute;
+
+  width: 400px;
+  height: 400px;
+
+  z-index: 0;
+
+  border-radius: 50%;
+
+  filter: blur(90px);
+
+  pointer-events: none;
+
+  will-change: transform, opacity;
+}
+
+.el-login-page:not(:has(.el-login-glow))::before {
+  left: -160px;
+  top: 25%;
+
+  background: #1667ff;
+
+  animation:
+    eliseo-login-glow-left
+    5.8s
+    ease-in-out
+    infinite alternate;
+}
+
+.el-login-page:not(:has(.el-login-glow))::after {
+  right: -140px;
+  bottom: 10%;
+
+  background: #1767ff;
+
+  animation:
+    eliseo-login-glow-right
+    7.2s
+    ease-in-out
+    infinite alternate;
+}
+
+
+@media (prefers-reduced-motion: reduce) {
+  .el-login-glow,
+  .el-login-page::before,
+  .el-login-page::after {
+    animation: none !important;
+  }
+}

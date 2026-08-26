@@ -1,0 +1,602 @@
+/* =========================================================
+   ELÍSEO — CALL ROOM
+   Referência visual: painel de chamada escuro enviado pelo usuário.
+   Sem compartilhamento de tela nesta etapa.
+   ========================================================= */
+
+.el-call-page {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+  overflow: hidden;
+
+  display: flex;
+  flex-direction: column;
+
+  background:
+    radial-gradient(
+      circle at 82% 18%,
+      rgba(39, 57, 88, 0.14),
+      transparent 34%
+    ),
+    linear-gradient(
+      145deg,
+      #111a27,
+      #0a111b
+    );
+
+  border: 1px solid #172231;
+  border-radius: 14px;
+}
+
+
+.el-call-heading {
+  min-height: 142px;
+  padding: 36px 30px 20px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 18px;
+}
+
+
+.el-call-heading > div:first-child {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+
+.el-call-heading h1 {
+  margin: 0;
+
+  color: #f4f6fb;
+
+  font-size: 25px;
+  font-weight: 600;
+  letter-spacing: -0.4px;
+}
+
+
+.el-call-heading span {
+  margin-top: 7px;
+
+  color: #a3adbd;
+
+  font-size: 15px;
+}
+
+
+.el-call-heading span b {
+  margin: 0 7px;
+  color: #778397;
+  font-weight: 400;
+}
+
+
+.el-call-heading small {
+  margin-top: 5px;
+
+  color: #66758a;
+
+  font-size: 12px;
+}
+
+
+.el-call-heading-actions {
+  margin-left: auto;
+
+  display: flex;
+  align-items: center;
+
+  gap: 20px;
+}
+
+
+.el-call-heading-actions button {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+
+  color: #aeb8c8;
+
+  border-radius: 10px;
+
+  cursor: pointer;
+}
+
+
+.el-call-heading-actions button:hover {
+  background: #17212f;
+  color: white;
+}
+
+
+.el-call-error {
+  margin: 0 30px 12px;
+  padding: 10px 13px;
+
+  background: rgba(119, 37, 52, 0.24);
+
+  color: #ffabb8;
+
+  border: 1px solid rgba(190, 73, 91, 0.24);
+  border-radius: 9px;
+
+  font-size: 12px;
+}
+
+
+.el-call-grid {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+
+  padding: 18px 24px 150px;
+
+  display: grid;
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(260px, 1fr)
+    );
+
+  align-items: stretch;
+  justify-content: center;
+
+  gap: 14px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+
+.el-call-grid.count-1 {
+  grid-template-columns:
+    minmax(320px, 560px);
+}
+
+
+.el-call-grid.count-2 {
+  grid-template-columns:
+    repeat(
+      2,
+      minmax(280px, 1fr)
+    );
+}
+
+
+.el-call-grid.count-3 {
+  grid-template-columns:
+    repeat(
+      3,
+      minmax(250px, 1fr)
+    );
+}
+
+
+.el-call-card {
+  position: relative;
+
+  min-width: 0;
+  min-height: 355px;
+  max-height: 560px;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 75% 20%,
+      rgba(83, 73, 130, 0.16),
+      transparent 32%
+    ),
+    linear-gradient(
+      145deg,
+      #171f2c,
+      #111925
+    );
+
+  border: 1px solid #263246;
+  border-radius: 17px;
+
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.015),
+    0 18px 38px rgba(0, 0, 0, 0.08);
+}
+
+
+.el-call-card.camera-on {
+  background: #111824;
+}
+
+
+.el-call-video {
+  position: absolute;
+  inset: 0;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+
+  background: #0d141f;
+}
+
+
+.el-call-video.mirrored {
+  transform: scaleX(-1);
+}
+
+
+.el-call-card.camera-off .el-call-video {
+  opacity: 0;
+  pointer-events: none;
+}
+
+
+.el-call-avatar-stage {
+  position: absolute;
+  inset: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+
+.el-call-avatar {
+  width: 145px;
+  height: 145px;
+
+  overflow: hidden;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    linear-gradient(
+      145deg,
+      #27344a,
+      #182230
+    );
+
+  color: white;
+
+  border: 7px solid #39455b;
+  border-radius: 50%;
+
+  box-shadow:
+    0 16px 42px rgba(0, 0, 0, 0.24);
+
+  font-size: 42px;
+  font-weight: 700;
+}
+
+
+.el-call-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+
+.el-call-card-chips {
+  position: absolute;
+  z-index: 4;
+
+  left: 14px;
+  top: 14px;
+
+  display: flex;
+  flex-wrap: wrap;
+
+  gap: 7px;
+}
+
+
+.el-call-chip {
+  min-height: 34px;
+  padding: 0 11px;
+
+  display: inline-flex;
+  align-items: center;
+
+  gap: 7px;
+
+  background: rgba(12, 18, 28, 0.82);
+
+  color: #e8ecf3;
+
+  border: 1px solid rgba(116, 131, 153, 0.16);
+  border-radius: 9px;
+
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.16);
+  backdrop-filter: blur(10px);
+
+  font-size: 12px;
+}
+
+
+.el-call-chip.hand {
+  color: #f1d391;
+}
+
+
+.el-call-participant-name {
+  position: absolute;
+  z-index: 4;
+
+  left: 15px;
+  bottom: 16px;
+
+  color: white;
+
+  text-shadow:
+    0 2px 10px rgba(0, 0, 0, 0.65);
+
+  font-size: 17px;
+  font-weight: 600;
+}
+
+
+.el-call-card.camera-off
+.el-call-participant-name {
+  text-shadow: none;
+}
+
+
+.el-call-card-menu {
+  position: absolute;
+  z-index: 4;
+
+  width: 44px;
+  height: 42px;
+
+  right: 14px;
+  bottom: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: rgba(12, 18, 28, 0.72);
+
+  color: #d7dde8;
+
+  border: 1px solid rgba(117, 132, 155, 0.22);
+  border-radius: 9px;
+
+  backdrop-filter: blur(10px);
+}
+
+
+.el-call-controls-wrap {
+  position: absolute;
+  z-index: 20;
+
+  left: 50%;
+  bottom: 28px;
+
+  transform: translateX(-50%);
+}
+
+
+.el-call-controls {
+  min-height: 112px;
+  padding: 13px 22px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 17px;
+
+  background: rgba(15, 22, 33, 0.96);
+
+  border: 1px solid #253044;
+  border-radius: 15px;
+
+  box-shadow:
+    0 22px 55px rgba(0, 0, 0, 0.34);
+
+  backdrop-filter: blur(16px);
+}
+
+
+.el-call-control {
+  min-width: 78px;
+  padding: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 7px;
+
+  background: transparent;
+
+  color: #c4cbd6;
+
+  cursor: pointer;
+}
+
+
+.el-call-control-icon {
+  width: 54px;
+  height: 54px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #192332;
+
+  color: #c4ccd9;
+
+  border: 1px solid #202d3f;
+  border-radius: 10px;
+}
+
+
+.el-call-control:hover
+.el-call-control-icon,
+.el-call-control.active
+.el-call-control-icon {
+  background: #202c3e;
+  color: white;
+}
+
+
+.el-call-control-label {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  gap: 3px;
+
+  white-space: nowrap;
+
+  font-size: 12px;
+}
+
+
+.el-call-control.danger
+.el-call-control-icon {
+  background: #ef2747;
+  color: white;
+  border-color: #ef2747;
+}
+
+
+.el-call-control.danger:hover
+.el-call-control-icon {
+  background: #ff3856;
+}
+
+
+.el-call-control-divider {
+  width: 1px;
+  height: 57px;
+
+  margin: 0 2px;
+
+  background: #374355;
+}
+
+
+/* =========================================================
+   BOTÕES DE ENTRADA NA CHAMADA — DM / SERVIDOR
+   ========================================================= */
+
+.dm-call-header-button,
+.community-call-header-button {
+  width: 21px;
+  height: 21px;
+  min-width: 21px;
+  min-height: 21px;
+  padding: 0;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #aeb8c7;
+  border: 0;
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.dm-call-header-button svg,
+.community-call-header-button svg {
+  width: 21px;
+  height: 21px;
+}
+
+.dm-call-header-button:hover,
+.community-call-header-button:hover {
+  background: transparent;
+  color: white;
+}
+
+
+.community-voice-channel-button {
+  display: flex !important;
+  align-items: center !important;
+
+  gap: 10px !important;
+}
+
+
+.community-voice-channel-button svg {
+  flex-shrink: 0;
+}
+
+
+/* =========================================================
+   RESPONSIVO
+   ========================================================= */
+
+@media (max-width: 1150px) {
+  .el-call-grid.count-3,
+  .el-call-grid.count-4 {
+    grid-template-columns:
+      repeat(
+        2,
+        minmax(260px, 1fr)
+      );
+  }
+
+  .el-call-controls {
+    gap: 10px;
+    padding-left: 15px;
+    padding-right: 15px;
+  }
+
+  .el-call-control {
+    min-width: 70px;
+  }
+}
+
+
+@media (max-width: 850px) {
+  .el-call-heading {
+    min-height: 115px;
+    padding: 24px 20px 14px;
+  }
+
+  .el-call-heading small {
+    display: none;
+  }
+
+  .el-call-grid,
+  .el-call-grid.count-1,
+  .el-call-grid.count-2,
+  .el-call-grid.count-3,
+  .el-call-grid.count-4 {
+    grid-template-columns: 1fr;
+    padding: 10px 14px 140px;
+  }
+
+  .el-call-card {
+    min-height: 300px;
+  }
+
+  .el-call-controls {
+    max-width: calc(100vw - 30px);
+    overflow-x: auto;
+  }
+
+  .el-call-control-label {
+    font-size: 11px;
+  }
+}

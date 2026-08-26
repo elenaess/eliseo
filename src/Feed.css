@@ -1,0 +1,1098 @@
+/* =========================================================
+   ELÍSEO FEED
+   Totalmente isolado do App.css
+   ========================================================= */
+
+/* =========================================================
+   ELÍSEO — FEED
+   O menu lateral agora vem do App.tsx
+   ========================================================= */
+
+.el-feed-main {
+  min-width: 0;
+  min-height: 0;
+
+  height: 100%;
+
+  flex: 1 1 auto;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      #111a27,
+      #0a111b
+    );
+
+  border:
+    1px solid #172231;
+
+  border-radius: 14px;
+}
+
+
+
+/* =========================================================
+   MAIN
+   ========================================================= */
+
+.el-feed-main {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      #111a27,
+      #0a111b
+    );
+
+  border:
+    1px solid #172231;
+
+  border-radius: 14px;
+}
+
+
+/* =========================================================
+   HEADER
+   ========================================================= */
+
+.el-feed-top {
+  height: 82px;
+
+  min-height: 82px;
+
+  margin:
+    0
+    22px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 20px;
+
+  border-bottom:
+    1px solid
+    #253043;
+}
+
+
+.el-feed-tabs {
+  height: 100%;
+
+  display: flex;
+  align-items: stretch;
+
+  gap: 18px;
+}
+
+
+.el-feed-tabs button {
+  position: relative;
+
+  min-width: 120px;
+
+  background: transparent;
+
+  border: 0;
+
+  color: #a9b2c1;
+
+  font-size: 18px;
+
+  cursor: pointer;
+}
+
+
+.el-feed-tabs button.active {
+  color: #49b6ff;
+}
+
+
+.el-feed-tabs button.active::after {
+  content: "";
+
+  position: absolute;
+
+  height: 2px;
+
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  background: #4dbbff;
+}
+
+
+.el-feed-search {
+  width: 255px;
+  height: 44px;
+
+  margin-left: auto;
+
+  padding:
+    0
+    17px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 10px;
+
+  background: #172130;
+
+  border-radius: 23px;
+
+  color: #aab4c3;
+}
+
+
+.el-feed-search input {
+  min-width: 0;
+
+  flex: 1;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 15px;
+}
+
+
+.el-feed-search input::placeholder {
+  color: #8e99aa;
+}
+
+
+.el-feed-header-icon {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+
+  border: 0;
+
+  color: #adb7c6;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   SCROLL
+   ========================================================= */
+
+.el-feed-scroll {
+  flex: 1;
+
+  min-height: 0;
+
+  padding:
+    18px
+    22px
+    50px;
+
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+
+/* =========================================================
+   AVATAR
+   ========================================================= */
+
+.el-feed-avatar {
+  width: 52px;
+  height: 52px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      #2a3547,
+      #192230
+    );
+
+  color: white;
+
+  border-radius: 50%;
+
+  font-weight: 700;
+}
+
+
+.el-feed-avatar.small {
+  width: 35px;
+  height: 35px;
+
+  font-size: 11px;
+}
+
+
+.el-feed-avatar img {
+  width: 100%;
+  height: 100%;
+
+  object-fit: cover;
+}
+
+
+/* =========================================================
+   COMPOSER
+   ========================================================= */
+
+.el-feed-composer {
+  width: 100%;
+
+  margin-bottom: 15px;
+
+  overflow: hidden;
+
+  background:
+    linear-gradient(
+      145deg,
+      #151e2a,
+      #101722
+    );
+
+  border:
+    1px solid
+    #293548;
+
+  border-radius: 12px;
+}
+
+
+.el-feed-composer-top {
+  min-height: 90px;
+
+  padding:
+    18px
+    18px
+    14px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 14px;
+}
+
+
+.el-feed-composer textarea {
+  flex: 1;
+
+  min-height: 64px;
+
+  padding:
+    10px
+    0;
+
+  resize: none;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+
+  font-size: 17px;
+  line-height: 1.5;
+}
+
+
+.el-feed-composer textarea::placeholder {
+  color: #858fa0;
+}
+
+
+.el-feed-composer-bottom {
+  min-height: 56px;
+
+  padding:
+    0
+    20px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 30px;
+
+  border-top:
+    1px solid
+    #273244;
+}
+
+
+.el-feed-composer-bottom > button:not(.el-feed-publish) {
+  display: flex;
+  align-items: center;
+
+  gap: 9px;
+
+  background: transparent;
+
+  border: 0;
+
+  color: #c4ccd8;
+
+  font-size: 15px;
+
+  cursor: pointer;
+}
+
+
+.el-feed-compose-spacer {
+  flex: 1;
+}
+
+
+.el-feed-publish {
+  height: 37px;
+
+  padding:
+    0
+    16px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  background:
+    linear-gradient(
+      135deg,
+      #477eff,
+      #704cff
+    );
+
+  color: white;
+
+  border: 0;
+  border-radius: 8px;
+
+  cursor: pointer;
+}
+
+
+/* =========================================================
+   POSTS
+   ========================================================= */
+
+.el-feed-post-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 7px;
+}
+
+
+.el-feed-post {
+  position: relative;
+
+  width: 100%;
+
+  padding:
+    16px
+    17px
+    12px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #151e2a,
+      #101722
+    );
+
+  border:
+    1px solid
+    #293548;
+
+  border-radius: 12px;
+}
+
+
+.el-feed-reposted {
+  margin-bottom: 11px;
+  margin-left: 61px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  color: #798699;
+
+  font-size: 12px;
+}
+
+
+.el-feed-post-header {
+  display: flex;
+  align-items: center;
+
+  gap: 13px;
+}
+
+
+.el-feed-author {
+  min-width: 0;
+
+  flex: 1;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 3px;
+}
+
+
+.el-feed-author strong {
+  color: #4db5ff;
+
+  font-size: 17px;
+  font-weight: 600;
+}
+
+
+.el-feed-author > span {
+  color: #7f8b9d;
+
+  font-size: 13px;
+}
+
+
+.el-feed-star {
+  margin-left: 6px;
+
+  color: #d9deeb;
+}
+
+
+.el-feed-post-menu-wrap {
+  position: relative;
+}
+
+
+.el-feed-more {
+  width: 36px;
+  height: 36px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: transparent;
+
+  color: #8f9cad;
+
+  border: 0;
+
+  cursor: pointer;
+}
+
+
+.el-feed-dropdown {
+  position: absolute;
+
+  z-index: 20;
+
+  width: 160px;
+
+  right: 0;
+  top: 36px;
+
+  padding: 6px;
+
+  background: #18212f;
+
+  border:
+    1px solid
+    #2b3748;
+
+  border-radius: 8px;
+
+  box-shadow:
+    0 20px 50px
+    rgba(
+      0,
+      0,
+      0,
+      0.4
+    );
+}
+
+
+.el-feed-dropdown button {
+  width: 100%;
+
+  padding: 10px;
+
+  background: transparent;
+
+  color: #ff8c98;
+
+  border: 0;
+  border-radius: 6px;
+
+  cursor: pointer;
+}
+
+
+.el-feed-post-body {
+  padding:
+    8px
+    0
+    7px
+    66px;
+}
+
+
+.el-feed-post-body p {
+  margin: 0;
+
+  color: #eef1f6;
+
+  font-size: 16px;
+  line-height: 1.5;
+
+  overflow-wrap: anywhere;
+}
+
+
+.el-feed-post-media {
+  width: min(
+    100%,
+    540px
+  );
+
+  margin-top: 14px;
+
+  overflow: hidden;
+
+  border-radius: 9px;
+
+  border:
+    1px solid
+    #293548;
+}
+
+
+.el-feed-post-media img {
+  width: 100%;
+
+  max-height: 420px;
+
+  object-fit: cover;
+}
+
+
+.el-feed-post-actions {
+  padding:
+    5px
+    0
+    0
+    65px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 22px;
+}
+
+
+.el-feed-post-actions button {
+  min-width: 45px;
+  height: 35px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  background: transparent;
+
+  color: #8996a7;
+
+  border: 0;
+
+  cursor: pointer;
+}
+
+
+.el-feed-post-actions button:hover {
+  color: #d5dce7;
+}
+
+
+.el-feed-post-actions button.liked {
+  color: #7453ff;
+}
+
+
+/* =========================================================
+   COMMENTS
+   ========================================================= */
+
+.el-feed-comments {
+  margin:
+    10px
+    0
+    0
+    65px;
+
+  padding-top: 12px;
+
+  border-top:
+    1px solid
+    #253043;
+}
+
+
+.el-feed-comment {
+  margin-bottom: 10px;
+
+  display: flex;
+  align-items: flex-start;
+
+  gap: 10px;
+}
+
+
+.el-feed-comment > div:last-child {
+  padding:
+    8px
+    11px;
+
+  background: #17212f;
+
+  border-radius: 8px;
+}
+
+
+.el-feed-comment strong {
+  color: #d9e0e9;
+
+  font-size: 12px;
+}
+
+
+.el-feed-comment p {
+  margin:
+    3px
+    0
+    0;
+
+  color: #abb5c4;
+
+  font-size: 13px;
+}
+
+
+.el-feed-comment-input {
+  height: 42px;
+
+  padding:
+    0
+    5px
+    0
+    13px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  background: #17212f;
+
+  border:
+    1px solid
+    #293548;
+
+  border-radius: 8px;
+}
+
+
+.el-feed-comment-input input {
+  flex: 1;
+
+  min-width: 0;
+
+  border: 0;
+  outline: 0;
+
+  background: transparent;
+
+  color: white;
+}
+
+
+.el-feed-comment-input button {
+  width: 33px;
+  height: 33px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: #506cff;
+
+  color: white;
+
+  border: 0;
+  border-radius: 6px;
+}
+
+
+/* =========================================================
+   EMPTY
+   ========================================================= */
+
+.el-feed-empty {
+  min-height: 180px;
+
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
+  justify-content: center;
+
+  gap: 8px;
+
+  color: #69778a;
+
+  border:
+    1px dashed
+    #283447;
+
+  border-radius: 12px;
+}
+
+
+.el-feed-empty strong {
+  color: #aeb8c6;
+}
+
+
+/* =========================================================
+   SCROLLBAR
+   ========================================================= */
+
+.el-feed-scroll::-webkit-scrollbar {
+  width: 6px;
+}
+
+
+.el-feed-scroll::-webkit-scrollbar-thumb {
+  background: #273448;
+
+  border-radius: 20px;
+}
+
+
+/* =========================================================
+   RESPONSIVE
+   ========================================================= */
+
+@media (
+  max-width: 1100px
+) {
+
+  .el-feed-sidebar {
+    width: 300px;
+
+    flex-basis: 300px;
+  }
+
+
+  .el-feed-tabs button {
+    min-width: 95px;
+
+    font-size: 15px;
+  }
+
+
+  .el-feed-search {
+    width: 210px;
+  }
+
+}
+
+
+@media (
+  max-width: 800px
+) {
+
+  .el-feed-sidebar {
+    display: none;
+  }
+
+
+  .el-feed-search {
+    display: none;
+  }
+
+
+  .el-feed-top {
+    gap: 8px;
+  }
+
+}
+/* =========================================================
+   FEED — ALINHAMENTO DOS POSTS
+   ========================================================= */
+
+/* bloco do autor */
+.el-feed-post-header {
+  justify-content: flex-start;
+  text-align: left;
+}
+
+
+/* nome + horário */
+.el-feed-author {
+  display: flex;
+  flex-direction: column;
+
+  align-items: flex-start;
+  justify-content: flex-start;
+
+  text-align: left;
+}
+
+
+.el-feed-author strong {
+  width: 100%;
+
+  text-align: left;
+}
+
+
+.el-feed-author > span {
+  width: 100%;
+
+  text-align: left;
+}
+
+
+/* conteúdo da publicação */
+.el-feed-post-body {
+  text-align: left;
+}
+
+
+.el-feed-post-body p {
+  width: 100%;
+
+  margin-left: 0;
+  margin-right: 0;
+
+  text-align: left;
+}
+
+
+/* repost */
+.el-feed-reposted {
+  justify-content: flex-start;
+
+  text-align: left;
+}
+
+
+/* comentários também ficam coerentes */
+.el-feed-comment {
+  text-align: left;
+}
+
+
+.el-feed-comment > div:last-child {
+  text-align: left;
+}
+
+
+.el-feed-comment strong,
+.el-feed-comment p {
+  text-align: left;
+}
+
+/* =========================================================
+   FEED — UPLOAD / PREVIEW DE MÍDIA
+   ========================================================= */
+
+.el-feed-media-input {
+  display: none;
+}
+
+.el-feed-media-preview {
+  position: relative;
+
+  width: min(
+    calc(100% - 102px),
+    540px
+  );
+
+  margin:
+    0
+    18px
+    14px
+    84px;
+
+  overflow: hidden;
+
+  background: #0d1520;
+
+  border:
+    1px solid
+    #2a374a;
+
+  border-radius: 10px;
+}
+
+.el-feed-media-preview img {
+  width: 100%;
+  max-height: 320px;
+
+  display: block;
+
+  object-fit: cover;
+}
+
+.el-feed-media-remove {
+  position: absolute;
+
+  width: 34px;
+  height: 34px;
+
+  right: 10px;
+  top: 10px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background:
+    rgba(
+      10,
+      16,
+      25,
+      0.86
+    );
+
+  color: #eef2f7;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.12
+    );
+
+  border-radius: 9px;
+
+  cursor: pointer;
+
+  backdrop-filter:
+    blur(10px);
+}
+
+.el-feed-media-kind {
+  position: absolute;
+
+  left: 10px;
+  bottom: 10px;
+
+  padding:
+    5px
+    8px;
+
+  background:
+    rgba(
+      10,
+      16,
+      25,
+      0.82
+    );
+
+  color: #cbd5e3;
+
+  border:
+    1px solid
+    rgba(
+      255,
+      255,
+      255,
+      0.1
+    );
+
+  border-radius: 7px;
+
+  font-size: 11px;
+  font-weight: 600;
+
+  backdrop-filter:
+    blur(10px);
+}
+
+.el-feed-media-error {
+  margin:
+    -2px
+    18px
+    12px
+    84px;
+
+  color: #ff9ba7;
+
+  font-size: 12px;
+}
+
+.el-feed-post-body
+> .el-feed-post-media:first-child {
+  margin-top: 0;
+}
+
+.el-feed-composer-bottom
+button:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+@media (max-width: 800px) {
+  .el-feed-media-preview {
+    width:
+      calc(100% - 36px);
+
+    margin-left: 18px;
+  }
+
+  .el-feed-media-error {
+    margin-left: 18px;
+  }
+}
