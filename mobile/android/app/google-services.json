@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "205610214409",
+    "project_id": "eliseeo",
+    "storage_bucket": "eliseeo.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:205610214409:android:5578e308af0419815f44d8",
+        "android_client_info": {
+          "package_name": "com.eliseo.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "205610214409-vkrq5fom050gku61rckthdhi3v2k3v5d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGyIHhVarIrOL7ZGdGxBvfMgvlROchYpA"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "205610214409-vkrq5fom050gku61rckthdhi3v2k3v5d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
