@@ -1,4 +1,4 @@
-import React, {
+﻿import React, {
   useCallback,
   useEffect,
   useMemo,
@@ -198,6 +198,15 @@ const VOICE_THRESHOLD =
 
 const SPEAKING_HOLD_MS =
   420;
+
+const REMOTE_AUDIO_GAIN =
+  4;
+
+const AUDIO_CONSTRAINTS: any = {
+  echoCancellation: true,
+  noiseSuppression: true,
+  autoGainControl: true,
+};
 
 /* =========================================================
    HELPERS
@@ -489,11 +498,11 @@ async function requestMicrophonePermission() {
     await PermissionsAndroid.request(
       permission,
       {
-        title: 'Permissão de microfone',
+        title: 'PermissÃ£o de microfone',
         message:
-          'O Elíseo precisa acessar o microfone para participar das chamadas.',
+          'O ElÃ­seo precisa acessar o microfone para participar das chamadas.',
         buttonPositive: 'Permitir',
-        buttonNegative: 'Agora não',
+        buttonNegative: 'Agora nÃ£o',
       },
     );
 
@@ -524,11 +533,11 @@ async function requestCameraPermission() {
     await PermissionsAndroid.request(
       permission,
       {
-        title: 'Permissão de câmera',
+        title: 'PermissÃ£o de cÃ¢mera',
         message:
-          'O Elíseo precisa acessar a câmera para participar de chamadas com vídeo.',
+          'O ElÃ­seo precisa acessar a cÃ¢mera para participar de chamadas com vÃ­deo.',
         buttonPositive: 'Permitir',
-        buttonNegative: 'Agora não',
+        buttonNegative: 'Agora nÃ£o',
       },
     );
 
@@ -706,7 +715,7 @@ export function CallScreen({
           title:
             routeParams
               .title ??
-            'Chamada do Elíseo',
+            'Chamada do ElÃ­seo',
 
           startWithVideo:
             routeParams
@@ -1139,7 +1148,7 @@ export function CallScreen({
           /*
            * IMPORTANTE:
            * usamos ontrack em vez de
-           * addEventListener para não
+           * addEventListener para nÃ£o
            * bater na tipagem do projeto.
            */
           pc.ontrack =
@@ -1176,6 +1185,18 @@ export function CallScreen({
               ) {
                 track.enabled =
                   speakerRef.current;
+
+                if (
+                  speakerRef.current &&
+                  typeof (track as any)
+                    ._setVolume ===
+                    'function'
+                ) {
+                  (track as any)
+                    ._setVolume(
+                      REMOTE_AUDIO_GAIN,
+                    );
+                }
               }
 
               setRemoteStreams(
@@ -1347,7 +1368,7 @@ export function CallScreen({
                   caught
                 ) {
                   console.warn(
-                    'Falha na sinalização RTC:',
+                    'Falha na sinalizaÃ§Ã£o RTC:',
                     caught,
                   );
                 }
@@ -1554,7 +1575,7 @@ export function CallScreen({
       !signedUser
     ) {
       setError(
-        'Você precisa estar conectado para entrar na chamada.',
+        'VocÃª precisa estar conectado para entrar na chamada.',
       );
 
       setConnecting(
@@ -1566,8 +1587,8 @@ export function CallScreen({
 
     /*
      * Copiamos os valores aqui.
-     * Assim o TypeScript não perde
-     * o narrowing dentro da função
+     * Assim o TypeScript nÃ£o perde
+     * o narrowing dentro da funÃ§Ã£o
      * async start().
      */
     const userUid =
@@ -1640,7 +1661,8 @@ export function CallScreen({
           const audioStream =
             await mediaDevices
               .getUserMedia({
-                audio: true,
+                audio:
+                  AUDIO_CONSTRAINTS,
 
                 video:
                   false,
@@ -1666,12 +1688,12 @@ export function CallScreen({
         caught
       ) {
         console.warn(
-          'Microfone indisponível:',
+          'Microfone indisponÃ­vel:',
           caught,
         );
       }
 
-      /* CÂMERA */
+      /* CÃ‚MERA */
 
       if (
         call.startWithVideo
@@ -1713,7 +1735,7 @@ export function CallScreen({
           caught
         ) {
           console.warn(
-            'Câmera indisponível:',
+            'CÃ¢mera indisponÃ­vel:',
             caught,
           );
         }
@@ -1776,7 +1798,7 @@ export function CallScreen({
                 .split(
                   '@',
                 )[0] ||
-              'Usuário',
+              'UsuÃ¡rio',
 
             avatar:
               profile
@@ -1913,7 +1935,7 @@ export function CallScreen({
         setError(
           caught instanceof Error
             ? caught.message
-            : 'Não foi possível entrar na chamada.',
+            : 'NÃ£o foi possÃ­vel entrar na chamada.',
         );
       }
     }
@@ -2222,7 +2244,7 @@ export function CallScreen({
 
             if (!cameraGranted) {
               setError(
-                'Permita o acesso à câmera para ligar o vídeo.',
+                'Permita o acesso Ã  cÃ¢mera para ligar o vÃ­deo.',
               );
 
               return;
@@ -2248,7 +2270,7 @@ export function CallScreen({
               !videoTrack
             ) {
               throw new Error(
-                'Nenhuma câmera encontrada.',
+                'Nenhuma cÃ¢mera encontrada.',
               );
             }
 
@@ -2267,13 +2289,38 @@ export function CallScreen({
                   videoTrack,
                 );
             }
+
+            /*
+             * MediaStream ÃƒÂ© mutÃƒÂ¡vel. Criamos uma nova referÃƒÂªncia
+             * para o React remontar o RTCView imediatamente.
+             */
+            const renderedStream =
+              new MediaStream();
+
+            stream
+              .getTracks()
+              .forEach(
+                track => {
+                  renderedStream
+                    .addTrack(
+                      track,
+                    );
+                },
+              );
+
+            localStreamRef.current =
+              renderedStream;
+
+            setLocalStream(
+              renderedStream,
+            );
           } catch (
             caught
           ) {
             setError(
               caught instanceof Error
                 ? caught.message
-                : 'Não foi possível ligar a câmera.',
+                : 'NÃ£o foi possÃ­vel ligar a cÃ¢mera.',
             );
 
             return;
@@ -2363,7 +2410,7 @@ export function CallScreen({
               await mediaDevices
                 .getUserMedia({
                   audio:
-                    true,
+                    AUDIO_CONSTRAINTS,
 
                   video:
                     false,
@@ -2402,7 +2449,7 @@ export function CallScreen({
             setError(
               caught instanceof Error
                 ? caught.message
-                : 'Não foi possível acessar o microfone.',
+                : 'NÃ£o foi possÃ­vel acessar o microfone.',
             );
 
             return;
@@ -2482,6 +2529,18 @@ export function CallScreen({
                 track => {
                   track.enabled =
                     next;
+
+                  if (
+                    next &&
+                    typeof (track as any)
+                      ._setVolume ===
+                      'function'
+                  ) {
+                    (track as any)
+                      ._setVolume(
+                        REMOTE_AUDIO_GAIN,
+                      );
+                  }
                 },
               );
           },
@@ -2695,7 +2754,7 @@ export function CallScreen({
             1
               ? 'participante'
               : 'participantes'}
-            {' · '}
+            {' Â· '}
             {duration}
           </Text>
 
@@ -2878,7 +2937,7 @@ export function CallScreen({
 
           const displayName =
             mine
-              ? 'Você'
+              ? 'VocÃª'
               : item.username;
 
           return (
@@ -2921,7 +2980,28 @@ export function CallScreen({
                     styles.cameraStage
                   }
                 >
-                  {item.avatar ? (
+                  {hasVideo &&
+                  stream ? (
+                    <RTCView
+                      key={
+                        `${item.uid}-${stream
+                          .getVideoTracks()[0]
+                          ?.id ??
+                          'video'}`
+                      }
+                      streamURL={
+                        stream.toURL()
+                      }
+                      mirror={
+                        mine
+                      }
+                      objectFit="cover"
+                      zOrder={1}
+                      style={
+                        styles.rtcVideo
+                      }
+                    />
+                  ) : item.avatar ? (
                     <Image
                       source={{
                         uri:
@@ -2944,22 +3024,6 @@ export function CallScreen({
                       size={84}
                     />
                   )}
-
-                  {hasVideo &&
-                    stream && (
-                      <RTCView
-                        streamURL={
-                          stream.toURL()
-                        }
-                        mirror={
-                          mine
-                        }
-                        objectFit="cover"
-                        style={
-                          styles.rtcVideo
-                        }
-                      />
-                    )}
                 </View>
 
                 <View
@@ -2981,7 +3045,7 @@ export function CallScreen({
                           styles.participantChipText
                         }
                       >
-                        Mão levantada
+                        MÃ£o levantada
                       </Text>
                     </>
                   ) : !itemMic ? (
@@ -3015,7 +3079,7 @@ export function CallScreen({
                           styles.participantChipText
                         }
                       >
-                        Câmera ligada
+                        CÃ¢mera ligada
                       </Text>
                     </>
                   ) : (
@@ -3065,7 +3129,7 @@ export function CallScreen({
           }
         >
           <Control
-            label="Câmera"
+            label="CÃ¢mera"
             active={
               camera
             }
@@ -3091,7 +3155,7 @@ export function CallScreen({
           </Control>
 
           <Control
-            label="Áudio"
+            label="Ãudio"
             active={
               speaker
             }
@@ -3149,8 +3213,8 @@ export function CallScreen({
           <Control
             label={
               hand
-                ? 'Abaixar mão'
-                : 'Levantar mão'
+                ? 'Abaixar mÃ£o'
+                : 'Levantar mÃ£o'
             }
             active={
               hand
@@ -3389,7 +3453,14 @@ const styles =
     },
 
     rtcVideo: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
+
+      zIndex: 5,
+
+      elevation: 5,
+
+      backgroundColor:
+        '#0A1019',
     },
 
     avatarImage: {
@@ -3593,3 +3664,4 @@ const styles =
         '#FF8193',
     },
   });
+

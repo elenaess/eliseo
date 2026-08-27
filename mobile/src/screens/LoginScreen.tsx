@@ -9,7 +9,8 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
+  Image,
+  } from 'react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 
@@ -18,21 +19,28 @@ import {
   EyeOff,
   LockKeyhole,
   Mail,
-} from 'lucide-react-native';
+  } from 'lucide-react-native';
 
-import Animated, {
+import Animated,
+  {
   FadeIn,
   FadeInDown,
-} from 'react-native-reanimated';
+  } from 'react-native-reanimated';
 
 import {
   useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+  } from 'react-native-safe-area-context';
 
 import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithCredential,
 } from '@react-native-firebase/auth';
+
+import {
+  GoogleSignin,
+} from '@react-native-google-signin/google-signin';
 
 import {LogoMark} from '../components/LogoMark';
 
@@ -50,6 +58,10 @@ import {
   radii,
   spacing,
 } from '../theme';
+
+GoogleSignin.configure({
+  webClientId: '205610214409-vkrq5fom050gku61rckthdhi3v2k3v5d.apps.googleusercontent.com',
+});
 
 export function LoginScreen() {
   const insets =
@@ -227,12 +239,87 @@ export function LoginScreen() {
     }
   }
 
-  function socialComingSoon(
-    provider: string,
-  ) {
-    setError(
-      `${provider} será conectado na próxima etapa.`,
-    );
+  async function googleLogin() {
+    try {
+      setLoading(true);
+      setError('');
+
+      await GoogleSignin.hasPlayServices({
+        showPlayServicesUpdateDialog:
+          true,
+      });
+
+      const result =
+        await GoogleSignin.signIn();
+
+      const idToken =
+        (result as any)?.data
+          ?.idToken ??
+        (result as any)?.idToken ??
+        null;
+
+      if (!idToken) {
+        throw new Error(
+          'O Google nÃ£o retornou o token de autenticaÃ§Ã£o.',
+        );
+      }
+
+      const googleCredential =
+        GoogleAuthProvider
+          .credential(
+            idToken,
+          );
+
+      const credential =
+        await signInWithCredential(
+          auth,
+          googleCredential,
+        );
+
+      await ensureUserProfile(
+        credential.user.uid,
+        credential.user.email ??
+          '',
+      );
+    } catch (caught) {
+      const code =
+        (caught as {
+          code?: string;
+        })?.code ?? '';
+
+      if (
+        code.includes(
+          'SIGN_IN_CANCELLED',
+        ) ||
+        code.includes(
+          '12501',
+        )
+      ) {
+        return;
+      }
+
+      if (
+        code.includes(
+          'DEVELOPER_ERROR',
+        ) ||
+        code === '10'
+      ) {
+        setError(
+          'Login Google nÃ£o configurado para este APK. Verifique o SHA-1 no Firebase.',
+        );
+
+        return;
+      }
+
+      setError(
+        caught instanceof Error &&
+        caught.message
+          ? caught.message
+          : 'NÃ£o foi possÃ­vel entrar com Google.',
+      );
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -521,57 +608,25 @@ export function LoginScreen() {
               disabled={
                 loading
               }
-              onPress={() =>
-                socialComingSoon(
-                  'Google',
-                )
-              }
+              onPress={() => {
+                void googleLogin();
+              }}
               style={
                 styles.social
               }
             >
-              <View
-                style={
-                  styles.google
+              <Image
+                source={
+                  require(
+                    '../assets/google-g.png',
+                  )
                 }
-              >
-                <Text
-                  style={
-                    styles.googleText
-                  }
-                >
-                  G
-                </Text>
-              </View>
-            </NativePressable>
-
-            <NativePressable
-              haptic
-              disabled={
-                loading
-              }
-              onPress={() =>
-                socialComingSoon(
-                  'GitHub',
-                )
-              }
-              style={
-                styles.social
-              }
-            >
-              <View
-                style={
-                  styles.socialInner
-                }
-              >
-                <Text
-                  style={
-                    styles.githubText
-                  }
-                >
-                  GH
-                </Text>
-              </View>
+                resizeMode="contain"
+                style={{
+                  width: 27,
+                  height: 27,
+                }}
+              />
             </NativePressable>
           </View>
 
