@@ -1,0 +1,12 @@
+﻿name = "eliseo-push"
+main = "src/index.mjs"
+compatibility_date = "2026-08-27"
+
+[vars]
+FIREBASE_PROJECT_ID = "eliseeo"
+
+
+[[kv_namespaces]]
+binding = "PUSH_EVENTS"
+id = "25037ccce8044b6d8f713b520eaebe3f"
+

@@ -4,6 +4,8 @@ import React, {
   useState,
 } from 'react';
 
+import {useRef} from 'react';
+
 import {
   FlatList,
   Image,
@@ -103,6 +105,11 @@ import {
 } from '../services/notifications';
 
 import {
+  notifyDmMessage,
+  notifyServerMessage,
+} from '../services/push';
+
+import {
   colors,
   radii,
   spacing,
@@ -150,6 +157,14 @@ export function ChatScreen({
 }: Props) {
   const insets =
     useSafeAreaInsets();
+
+
+  /* ELISEO_CHAT_UX */
+  const messageListRef =
+    useRef<FlatList<EliseoMediaMessage>>(null);
+
+  const didInitialScrollRef =
+    useRef(false);
 
   const [
     text,
@@ -287,6 +302,16 @@ export function ChatScreen({
   const currentUid =
     auth.currentUser?.uid ??
     '';
+
+
+  useEffect(() => {
+    didInitialScrollRef.current =
+      false;
+  }, [
+    route.params.conversationId,
+    serverId,
+    channelId,
+  ]);
 
   useEffect(() => {
     if (
@@ -638,20 +663,40 @@ export function ChatScreen({
           serverId &&
           channelId
         ) {
-          await sendChannelMediaMessage(
+          const messageId =
+            await sendChannelMediaMessage(
             serverId,
             channelId,
             currentUid,
             clean,
             uploaded,
           );
+
+          /* ELISEO_PUSH_AFTER_sendChannelMediaMessage */
+          if (messageId) {
+            void notifyServerMessage({
+              serverId,
+              channelId,
+              messageId,
+            });
+          }
         } else {
-          await sendDmMediaMessage(
+          const messageId =
+            await sendDmMediaMessage(
             route.params.conversationId,
             currentUid,
             clean,
             uploaded,
           );
+
+          /* ELISEO_PUSH_AFTER_sendDmMediaMessage */
+          if (messageId) {
+            void notifyDmMessage({
+              conversationId:
+                route.params.conversationId,
+              messageId,
+            });
+          }
         }
 
         setText('');
@@ -666,21 +711,41 @@ export function ChatScreen({
         serverId &&
         channelId
       ) {
-        await sendChannelMessage(
+        const messageId =
+            await sendChannelMessage(
           serverId,
           channelId,
           currentUid,
           clean,
         );
 
+          /* ELISEO_PUSH_AFTER_sendChannelMessage */
+          if (messageId) {
+            void notifyServerMessage({
+              serverId,
+              channelId,
+              messageId,
+            });
+          }
+
         return;
       }
 
-      await sendFirestoreMessage(
+      const messageId =
+            await sendFirestoreMessage(
         route.params.conversationId,
         currentUid,
         clean,
       );
+
+          /* ELISEO_PUSH_AFTER_sendFirestoreMessage */
+          if (messageId) {
+            void notifyDmMessage({
+              conversationId:
+                route.params.conversationId,
+              messageId,
+            });
+          }
     } catch (caught) {
       setText(
         clean,
@@ -701,6 +766,18 @@ export function ChatScreen({
       ? channelMessages
       : dmMessages;
 
+
+  function scrollToLatest(
+    animated = false,
+  ) {
+    requestAnimationFrame(() => {
+      messageListRef.current
+        ?.scrollToEnd({
+          animated,
+        });
+    });
+  }
+
   return (
     <KeyboardAvoidingView
       style={[
@@ -715,7 +792,7 @@ export function ChatScreen({
         Platform.OS ===
         'ios'
           ? 'padding'
-          : undefined
+          : 'height'
       }
     >
       <ScreenHeader
@@ -823,6 +900,20 @@ export function ChatScreen({
       />
 
       <FlatList
+        ref={
+          messageListRef
+        }
+        keyboardShouldPersistTaps="handled"
+        onContentSizeChange={() => {
+          if (
+            !didInitialScrollRef.current &&
+            messages.length > 0
+          ) {
+            didInitialScrollRef.current =
+              true;
+            scrollToLatest(false);
+          }
+        }}
         data={
           messages
         }
@@ -1118,6 +1209,11 @@ export function ChatScreen({
           </NativePressable>
 
           <TextInput
+            onFocus={() => {
+              setTimeout(() => {
+                scrollToLatest(true);
+              }, 140);
+            }}
             value={
               text
             }

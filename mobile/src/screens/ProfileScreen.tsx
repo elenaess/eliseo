@@ -10,19 +10,20 @@ import {
   Text,
   TextInput,
   View,
-} from 'react-native';
+  Image,
+  } from 'react-native';
 
 import type {
   BottomTabScreenProps,
-} from '@react-navigation/bottom-tabs';
+  } from '@react-navigation/bottom-tabs';
 
 import type {
   CompositeScreenProps,
-} from '@react-navigation/native';
+  } from '@react-navigation/native';
 
 import type {
   NativeStackScreenProps,
-} from '@react-navigation/native-stack';
+  } from '@react-navigation/native-stack';
 
 import {
   Bell,
@@ -35,45 +36,51 @@ import {
   Pencil,
   Settings,
   X,
-} from 'lucide-react-native';
+  } from 'lucide-react-native';
 
 import LinearGradient from 'react-native-linear-gradient';
 
 import {
   useSafeAreaInsets,
-} from 'react-native-safe-area-context';
+  } from 'react-native-safe-area-context';
 
 import {
   signOut,
-} from '@react-native-firebase/auth';
+  } from '@react-native-firebase/auth';
 
 import {
   Avatar,
-} from '../components/Avatar';
+  } from '../components/Avatar';
 
 import {
   NativePressable,
-} from '../components/NativePressable';
+  } from '../components/NativePressable';
 
 import {
   auth,
   EliseoUser,
   listenToUserProfile,
   updateUserProfile,
-} from '../services/firebase';
+  updateUserBanner,
+  } from '../services/firebase';
 
 import {
   pickSingleImage,
   updateProfileAvatar,
-} from '../services/media';
+  } from '../services/media';
 
 import {
   uploadAvatar,
+  uploadCommunityImage,
 } from '../services/storage';
 
 import {
   useAppAppearance,
 } from '../context/AppAppearanceContext';
+
+import {
+  unregisterPushForUser,
+} from '../services/push';
 
 import {
   colors,
@@ -182,6 +189,18 @@ export function ProfileScreen({
     >(null);
 
   const [
+    selectedBanner,
+    setSelectedBanner,
+  ] =
+    useState<
+      Awaited<
+        ReturnType<
+          typeof pickSingleImage
+        >
+      >
+    >(null);
+
+  const [
     error,
     setError,
   ] =
@@ -249,6 +268,28 @@ export function ProfileScreen({
     }
   }
 
+  async function chooseBanner() {
+    if (saving) {
+      return;
+    }
+
+    try {
+      setError('');
+      const image =
+        await pickSingleImage();
+
+      if (image) {
+        setSelectedBanner(image);
+      }
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : 'Não foi possível escolher o banner.',
+      );
+    }
+  }
+
   async function save() {
     const user =
       auth.currentUser;
@@ -280,7 +321,21 @@ export function ProfileScreen({
         );
       }
 
+      if (selectedBanner) {
+        const uploadedBanner =
+          await uploadCommunityImage(
+            user.uid,
+            selectedBanner,
+          );
+
+        await updateUserBanner(
+          user.uid,
+          uploadedBanner.url,
+        );
+      }
+
       setSelectedAvatar(null);
+      setSelectedBanner(null);
       setEditing(false);
     } catch (caught) {
       const message =
@@ -306,8 +361,22 @@ export function ProfileScreen({
     );
 
     setSelectedAvatar(null);
+    setSelectedBanner(null);
     setError('');
     setEditing(false);
+  }
+
+  async function logout() {
+    const user =
+      auth.currentUser;
+
+    if (user) {
+      await unregisterPushForUser(
+        user.uid,
+      );
+    }
+
+    await signOut(auth);
   }
 
   if (loading) {
@@ -483,6 +552,41 @@ export function ProfileScreen({
           styles.profileCard
         }
       >
+        {/* ELISEO_PROFILE_BANNER */}
+        {!!(selectedBanner?.uri || profile?.banner) && (
+          <>
+            <Image
+              source={{
+                uri:
+                  selectedBanner?.uri ||
+                  profile?.banner ||
+                  '',
+              }}
+              resizeMode="cover"
+              style={styles.profileBannerImage}
+            />
+            <View
+              pointerEvents="none"
+              style={styles.profileBannerShade}
+            />
+          </>
+        )}
+
+        {editing && (
+          <NativePressable
+            haptic
+            disabled={saving}
+            onPress={() => {
+              void chooseBanner();
+            }}
+            style={styles.bannerEdit}
+          >
+            <View style={styles.bannerEditInner}>
+              <Camera size={15} color={colors.white} />
+              <Text style={styles.bannerEditText}>Banner</Text>
+            </View>
+          </NativePressable>
+        )}
         <View
           style={
             styles.avatarWrap
@@ -557,6 +661,24 @@ export function ProfileScreen({
               {profile?.bio ||
                 'Personalize sua bio no Elíseo.'}
             </Text>
+
+            {!!(profile?.course || profile?.institutionTag) && (
+              <View style={styles.academicIdentity}>
+                {!!profile?.course && (
+                  <Text style={styles.courseText}>
+                    {profile.course}
+                    {!!profile?.institutionTag && ' — '}
+                  </Text>
+                )}
+                {!!profile?.institutionTag && (
+                  <View style={styles.institutionBadge}>
+                    <Text style={styles.institutionBadgeText}>
+                      {profile.institutionTag}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
           </>
         ) : (
           <View
@@ -930,6 +1052,7 @@ const styles =
     },
 
     profileCard: {
+      overflow: 'hidden',
       minHeight: 250,
 
       marginTop: 8,
@@ -1239,4 +1362,75 @@ const styles =
       color:
         colors.red,
     },
-  });
+  
+    profileBannerImage: {
+      ...StyleSheet.absoluteFill,
+      width: undefined,
+      height: undefined,
+      zIndex: 0,
+    },
+
+    profileBannerShade: {
+      ...StyleSheet.absoluteFill,
+      zIndex: 1,
+      backgroundColor: 'rgba(5,10,18,0.34)',
+    },
+
+    bannerEdit: {
+      position: 'absolute',
+      top: 12,
+      right: 12,
+      zIndex: 4,
+    },
+
+    bannerEditInner: {
+      minHeight: 34,
+      paddingHorizontal: 11,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      borderRadius: 17,
+      backgroundColor: 'rgba(5,10,18,0.70)',
+    },
+
+    bannerEditText: {
+      color: colors.white,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+
+    academicIdentity: {
+      marginTop: 11,
+      minHeight: 28,
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 5,
+      zIndex: 2,
+    },
+
+    courseText: {
+      color: 'rgba(255,255,255,0.92)',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+
+    institutionBadge: {
+      minHeight: 26,
+      paddingHorizontal: 10,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderRadius: 13,
+      backgroundColor: 'rgba(255,255,255,0.16)',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(255,255,255,0.20)',
+    },
+
+    institutionBadgeText: {
+      color: colors.white,
+      fontSize: 11,
+      fontWeight: '800',
+    },
+});

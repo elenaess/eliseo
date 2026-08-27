@@ -298,6 +298,8 @@ const styles =
     },
 
     iconWrapFocused: {
+    borderRadius: 16,
+    overflow: 'hidden',
       backgroundColor:
         'rgba(66,169,255,0.11)',
     },

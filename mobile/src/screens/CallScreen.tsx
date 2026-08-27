@@ -98,6 +98,10 @@ import type {
 } from '../services/calls';
 
 import {
+  notifyDmCallJoin,
+} from '../services/push';
+
+import {
   colors,
   radii,
   spacing,
@@ -1575,7 +1579,7 @@ export function CallScreen({
       !signedUser
     ) {
       setError(
-        'VocÃª precisa estar conectado para entrar na chamada.',
+        'Você precisa estar conectado para entrar na chamada.',
       );
 
       setConnecting(
@@ -1815,6 +1819,20 @@ export function CallScreen({
               false,
           },
         );
+
+        /* ELISEO_PUSH_DM_CALL */
+        if (
+          call.contextType === 'dm' &&
+          call.conversationId
+        ) {
+          void notifyDmCallJoin({
+            conversationId:
+              call.conversationId,
+            roomId:
+              call.roomId,
+            sessionId,
+          });
+        }
 
         if (
           cancelled
@@ -2937,7 +2955,7 @@ export function CallScreen({
 
           const displayName =
             mine
-              ? 'VocÃª'
+              ? 'Você'
               : item.username;
 
           return (
@@ -3155,7 +3173,7 @@ export function CallScreen({
           </Control>
 
           <Control
-            label="Ãudio"
+            label="Áudio"
             active={
               speaker
             }
@@ -3213,8 +3231,8 @@ export function CallScreen({
           <Control
             label={
               hand
-                ? 'Abaixar mÃ£o'
-                : 'Levantar mÃ£o'
+                ? 'Abaixar mão'
+                : 'Levantar mão'
             }
             active={
               hand

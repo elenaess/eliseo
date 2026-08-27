@@ -47,6 +47,10 @@ import {
 } from '../components/NativePressable';
 
 import {
+  ServerSettingsEditor,
+} from '../components/ServerSettingsEditor';
+
+import {
   ScreenHeader,
 } from '../components/ScreenHeader';
 
@@ -626,25 +630,11 @@ export function ServerScreen({
           </NativePressable>
         }
         right={
-          <NativePressable
-            haptic
-            style={
-              styles.headerAction
-            }
-          >
-            <View
-              style={
-                styles.headerActionInner
-              }
-            >
-              <MoreHorizontal
-                size={22}
-                color={
-                  colors.textSoft
-                }
-              />
-            </View>
-          </NativePressable>
+          owner ? (
+            <ServerSettingsEditor
+              server={server}
+            />
+          ) : null
         }
       />
 

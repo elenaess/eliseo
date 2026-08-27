@@ -623,9 +623,12 @@ export function LoginScreen() {
                 }
                 resizeMode="contain"
                 style={{
-                  width: 27,
-                  height: 27,
-                }}
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    alignSelf: 'center',
+  }}
               />
             </NativePressable>
           </View>

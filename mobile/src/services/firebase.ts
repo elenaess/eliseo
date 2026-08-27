@@ -36,6 +36,12 @@ export type EliseoUser = {
   username: string;
   avatar?: string;
   bio?: string;
+  banner?: string;
+  course?: string;
+  institutionalEmail?: string;
+  institutionDomain?: string;
+  institutionName?: string;
+  institutionTag?: string;
 };
 
 export async function ensureUserProfile(
@@ -121,6 +127,48 @@ export async function getUserById(
     bio:
       data?.bio ??
       '',
+
+
+    banner:
+
+      data?.banner ??
+
+      '',
+
+
+    course:
+
+      data?.course ??
+
+      '',
+
+
+    institutionalEmail:
+
+      data?.institutionalEmail ??
+
+      '',
+
+
+    institutionDomain:
+
+      data?.institutionDomain ??
+
+      '',
+
+
+    institutionName:
+
+      data?.institutionName ??
+
+      '',
+
+
+    institutionTag:
+
+      data?.institutionTag ??
+
+      '',
   };
 }
 
@@ -167,6 +215,48 @@ export function listenToUserProfile(
 
         bio:
           data?.bio ??
+          '',
+
+
+        banner:
+
+          data?.banner ??
+
+          '',
+
+
+        course:
+
+          data?.course ??
+
+          '',
+
+
+        institutionalEmail:
+
+          data?.institutionalEmail ??
+
+          '',
+
+
+        institutionDomain:
+
+          data?.institutionDomain ??
+
+          '',
+
+
+        institutionName:
+
+          data?.institutionName ??
+
+          '',
+
+
+        institutionTag:
+
+          data?.institutionTag ??
+
           '',
       });
     },
@@ -247,6 +337,48 @@ export async function searchUsers(
           bio:
             data?.bio ??
             '',
+
+
+          banner:
+
+            data?.banner ??
+
+            '',
+
+
+          course:
+
+            data?.course ??
+
+            '',
+
+
+          institutionalEmail:
+
+            data?.institutionalEmail ??
+
+            '',
+
+
+          institutionDomain:
+
+            data?.institutionDomain ??
+
+            '',
+
+
+          institutionName:
+
+            data?.institutionName ??
+
+            '',
+
+
+          institutionTag:
+
+            data?.institutionTag ??
+
+            '',
         };
       },
     );
@@ -325,6 +457,59 @@ export async function updateUserProfile(
       bio:
         bio.trim(),
 
+      updatedAt:
+        serverTimestamp(),
+    },
+  );
+}
+
+export async function updateAcademicProfile(
+  uid: string,
+  values: {
+    course?: string;
+    institutionalEmail?: string;
+    institutionDomain?: string;
+    institutionName?: string;
+    institutionTag?: string;
+  },
+) {
+  const update: Record<string, unknown> = {
+    updatedAt:
+      serverTimestamp(),
+  };
+
+  if (values.course !== undefined) {
+    update.course =
+      values.course.trim().slice(0, 80);
+  }
+
+  for (const key of [
+    'institutionalEmail',
+    'institutionDomain',
+    'institutionName',
+    'institutionTag',
+  ] as const) {
+    if (values[key] !== undefined) {
+      update[key] =
+        values[key]?.trim() ?? '';
+    }
+  }
+
+  await updateDoc(
+    doc(db, 'users', uid),
+    update,
+  );
+}
+
+export async function updateUserBanner(
+  uid: string,
+  bannerUrl: string,
+) {
+  await updateDoc(
+    doc(db, 'users', uid),
+    {
+      banner:
+        bannerUrl,
       updatedAt:
         serverTimestamp(),
     },
@@ -685,7 +870,8 @@ export async function sendFirestoreMessage(
         senderId,
     );
 
-  await addDoc(
+  const messageRef =
+    await addDoc(
     collection(
       db,
       'conversations',
@@ -746,6 +932,9 @@ export async function sendFirestoreMessage(
       },
     );
   }
+
+
+  return messageRef.id;
 }
 
 /* =========================================================
@@ -1024,6 +1213,30 @@ export async function joinServerById(
   );
 }
 
+export async function updateServerSettings(
+  serverId: string,
+  uid: string,
+  settings: {
+    name?: string;
+    photo?: string;
+    banner?: string;
+  },
+) {
+  const serverRef =
+    doc(db, 'servers', serverId);
+  const snapshot =
+    await getDoc(serverRef);
+
+  if (!snapshot.exists()) {
+    throw new Error('Servidor não encontrado.');
+  }
+  if (snapshot.data()?.ownerId !== uid) {
+    throw new Error('Somente o dono pode alterar o servidor.');
+  }
+
+  await updateDoc(serverRef, settings);
+}
+
 /* =========================================================
    CANAIS
    ========================================================= */
@@ -1251,7 +1464,8 @@ export async function sendChannelMessage(
     return;
   }
 
-  await addDoc(
+  const messageRef =
+    await addDoc(
     collection(
       db,
       'servers',
@@ -1272,4 +1486,7 @@ export async function sendChannelMessage(
         serverTimestamp(),
     },
   );
+
+
+  return messageRef.id;
 }

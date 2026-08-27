@@ -362,7 +362,8 @@ export async function sendDmMediaMessage(
         uid !== senderId,
     );
 
-  await addDoc(
+  const messageRef =
+    await addDoc(
     collection(
       db,
       'conversations',
@@ -414,6 +415,9 @@ export async function sendDmMediaMessage(
       unreadCounts,
     },
   );
+
+
+  return messageRef.id;
 }
 
 export async function sendChannelMediaMessage(
@@ -423,7 +427,8 @@ export async function sendChannelMediaMessage(
   text: string,
   media: UploadedFile,
 ) {
-  await addDoc(
+  const messageRef =
+    await addDoc(
     collection(
       db,
       'servers',
@@ -446,6 +451,9 @@ export async function sendChannelMediaMessage(
         media.key,
     },
   );
+
+
+  return messageRef.id;
 }
 
 export async function updateProfileAvatar(

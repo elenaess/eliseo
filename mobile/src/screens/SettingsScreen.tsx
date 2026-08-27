@@ -35,6 +35,10 @@ import {
 } from 'react-native-safe-area-context';
 
 import {
+  AcademicAccountRows,
+} from '../components/AcademicAccountRows';
+
+import {
   NativePressable,
 } from '../components/NativePressable';
 
@@ -314,6 +318,8 @@ export function SettingsScreen({
             void resetPassword();
           }}
         />
+
+        <AcademicAccountRows />
       </View>
 
       <SectionLabel

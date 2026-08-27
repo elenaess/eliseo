@@ -20,6 +20,11 @@ import {
   onAuthStateChanged,
 } from '@react-native-firebase/auth';
 
+import {
+  startPushForUser,
+  stopPushListeners,
+} from '../services/push';
+
 import {colors} from '../theme';
 
 import type {
@@ -195,6 +200,15 @@ export function RootNavigator() {
       onAuthStateChanged(
         auth,
         user => {
+          /* ELISEO_PUSH_AUTH */
+          if (user) {
+            void startPushForUser(
+              user.uid,
+            );
+          } else {
+            stopPushListeners();
+          }
+
           setSignedIn(
             !!user,
           );
