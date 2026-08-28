@@ -86,11 +86,20 @@ export type CreatePixRequestInput = {
 function createdAtValue(
   value: any,
 ) {
-  return (
-    value?.toMillis?.() ??
-    value?.seconds * 1000 ??
-    0
-  );
+  const millis =
+    value?.toMillis?.();
+
+  if (
+    typeof millis ===
+    'number'
+  ) {
+    return millis;
+  }
+
+  return typeof value?.seconds ===
+    'number'
+    ? value.seconds * 1000
+    : 0;
 }
 
 function sortNewest(

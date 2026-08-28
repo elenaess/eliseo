@@ -10,6 +10,7 @@ import {
 
 import notifee, {
   AndroidImportance,
+  AuthorizationStatus,
 } from '@notifee/react-native';
 
 import {
@@ -176,16 +177,27 @@ async function displayRemoteMessage(
     remoteMessage?.data ??
     {};
 
+  /* ELISEO_PUSH_EXTERNAL_V2 */
+  const notification =
+    remoteMessage?.notification ??
+    {};
+
   const title =
     typeof data.title === 'string' &&
     data.title
       ? data.title
-      : 'ElÃƒÂ­seo';
+      : typeof notification.title === 'string' &&
+          notification.title
+        ? notification.title
+        : 'Elíseo';
 
   const body =
-    typeof data.body === 'string'
+    typeof data.body === 'string' &&
+    data.body
       ? data.body
-      : '';
+      : typeof notification.body === 'string'
+        ? notification.body
+        : '';
 
   if (!body) {
     return;
@@ -230,6 +242,12 @@ export function registerPushBackgroundHandler() {
   messagingInstance
     .setBackgroundMessageHandler(
       async remoteMessage => {
+        if (
+          remoteMessage?.notification
+        ) {
+          return;
+        }
+
         await displayRemoteMessage(
           remoteMessage,
         );
@@ -254,7 +272,21 @@ export async function startPushForUser(
       return;
     }
 
-    await notifee.requestPermission();
+    const notificationSettings =
+      await notifee.requestPermission();
+
+    if (
+      notificationSettings
+        .authorizationStatus ===
+      AuthorizationStatus.DENIED
+    ) {
+      console.warn(
+        '[Elíseo push] notificações bloqueadas no Android',
+      );
+
+      return;
+    }
+
     await ensureChannel();
 
     if (
@@ -388,7 +420,27 @@ async function postPushEvent(
         },
       );
 
-    return response.ok;
+    if (!response.ok) {
+      const responseText =
+        await response
+          .text()
+          .catch(
+            () => '',
+          );
+
+      console.warn(
+        '[Elíseo push] Worker rejeitou evento',
+        response.status,
+        responseText.slice(
+          0,
+          300,
+        ),
+      );
+
+      return false;
+    }
+
+    return true;
   } catch (caught) {
     console.warn(
       '[ElÃƒÂ­seo push] evento nÃƒÂ£o enviado',

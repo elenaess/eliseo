@@ -4828,3 +4828,26 @@ button:hover:not(:disabled) svg {
   }
 }
 
+
+
+/* =========================================================
+   LOGO PIX
+   ========================================================= */
+
+.pix-brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.pix-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.dm-composer button .pix-brand-logo {
+  width: 22px;
+  height: 22px;
+}

@@ -56,6 +56,10 @@ import {
 } from '../components/LogoMark';
 
 import {
+  UserProfileTrigger,
+} from '../components/UserProfileTrigger';
+
+import {
   NativePressable,
 } from '../components/NativePressable';
 
@@ -480,7 +484,9 @@ function FeedPost({
           styles.postHeader
         }
       >
-        <Avatar
+        <UserProfileTrigger uid={post.repostOf && post.repostAuthorId ? post.repostAuthorId : post.authorId}>
+          {/* ELISEO_FEED_PROFILE_TRIGGER */}
+          <Avatar
           name={
             visibleAuthor
               ?.username ||
@@ -496,7 +502,8 @@ function FeedPost({
           size={
             44
           }
-        />
+          />
+        </UserProfileTrigger>
 
         <View
           style={
@@ -751,7 +758,9 @@ function FeedPost({
                   styles.comment
                 }
               >
-                <Avatar
+                <UserProfileTrigger uid={item.authorId}>
+                  {/* ELISEO_COMMENT_PROFILE_TRIGGER */}
+                  <Avatar
                   name={
                     item.author
                       ?.username ||
@@ -768,6 +777,7 @@ function FeedPost({
                     30
                   }
                 />
+                </UserProfileTrigger>
 
                 <View
                   style={
@@ -1008,6 +1018,10 @@ export function FeedScreen({
 
                   return {
                     ...post,
+
+                    createdAt:
+                      post.createdAt ??
+                      null,
 
                     author,
 

@@ -640,10 +640,40 @@ async function sendFcm(
             message: {
               token:
                 device.token,
+
+              /*
+               * ELISEO_FCM_VISIBLE_V2
+               *
+               * notification + data:
+               * - background/quit: Android/FCM exibe;
+               * - foreground: onMessage + Notifee exibe;
+               * - data continua levando IDs/largeIcon.
+               */
+              notification: {
+                title:
+                  data.title ||
+                  'Elíseo',
+                body:
+                  data.body ||
+                  'Nova atividade',
+              },
+
               data,
+
               android: {
                 priority:
                   'HIGH',
+
+                notification: {
+                  channel_id:
+                    'eliseo-messages',
+                  icon:
+                    'ic_stat_eliseo',
+                  default_sound:
+                    true,
+                  visibility:
+                    'PRIVATE',
+                },
               },
             },
           }),

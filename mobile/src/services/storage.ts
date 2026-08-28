@@ -162,10 +162,24 @@ export function uploadCommunityImage(
   );
 }
 
+function allowedDriveUploadFile(
+  file: EliseoUploadFile,
+) {
+  const name = (file.name || '').toLowerCase();
+  const type = (file.type || '').toLowerCase();
+  const ext = name.includes('.') ? name.split('.').pop() || '' : '';
+  const allowed = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm'];
+  return allowed.includes(ext) || type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html';
+}
+
 export async function uploadDriveFile(
   uid: string,
   file: EliseoUploadFile,
 ) {
+  /* ELISEO_DRIVE_TYPE_GUARD */
+  if (!allowedDriveUploadFile(file)) {
+    throw new Error('Tipo de arquivo não permitido no Drive.');
+  }
   try {
     return await uploadAttempt(
       uid,

@@ -1,11 +1,13 @@
 import {
   addDoc,
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
   runTransaction,
   serverTimestamp,
+  setDoc,
   where,
 } from '@react-native-firebase/firestore';
 
@@ -98,6 +100,34 @@ function sortNewestFirst<
         a.createdAt,
       ),
   );
+}
+
+export function isAllowedDriveUpload(
+  name: string,
+  contentType?: string | null,
+) {
+  const lowerName = name.toLowerCase();
+  const type = (contentType || '').toLowerCase();
+  const allowedExtensions = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm'];
+  const ext = lowerName.includes('.') ? lowerName.split('.').pop() || '' : '';
+  if (allowedExtensions.includes(ext)) return true;
+  return type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html';
+}
+
+export function listenToDriveFavorites(uid: string, callback: (ids: string[]) => void) {
+  return onSnapshot(
+    collection(db, 'users', uid, 'driveFavorites'),
+    snapshot => callback(snapshot.docs.map(item => item.id)),
+  );
+}
+
+export async function toggleDriveFileFavorite(uid: string, fileId: string, favorite: boolean) {
+  const ref = doc(db, 'users', uid, 'driveFavorites', fileId);
+  if (!favorite) {
+    await deleteDoc(ref);
+    return;
+  }
+  await setDoc(ref, {fileId, savedAt: serverTimestamp()});
 }
 
 /* =========================================================

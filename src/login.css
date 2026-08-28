@@ -49,8 +49,6 @@
   width: 400px;
   height: 400px;
 
-  z-index: 0;
-
   border-radius: 50%;
 
   filter: blur(90px);
@@ -58,8 +56,6 @@
   opacity: 0.22;
 
   pointer-events: none;
-
-  will-change: transform, opacity;
 }
 
 
@@ -68,12 +64,6 @@
   top: 25%;
 
   background: #1667ff;
-
-  animation:
-    eliseo-login-glow-left
-    5.8s
-    ease-in-out
-    infinite alternate;
 }
 
 
@@ -82,12 +72,6 @@
   bottom: 10%;
 
   background: #1767ff;
-
-  animation:
-    eliseo-login-glow-right
-    7.2s
-    ease-in-out
-    infinite alternate;
 }
 
 
@@ -512,99 +496,24 @@ label:not(:first-child) {
 
 
 /* =========================================================
-   GOOGLE
+   LOGOS SOCIAIS
    ========================================================= */
 
-.el-login-socials
-.google {
-  color: #4285f4;
-
-  font-family:
-    Arial,
-    sans-serif;
-
-  font-size: 23px;
-  font-weight: 700;
+.el-login-social-logo {
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
 }
 
-
-/* =========================================================
-   DISCORD
-   ========================================================= */
-
-.el-login-socials
-.discord span {
-  color: #6978f5;
-
-  font-size: 26px;
-  font-weight: 800;
+.el-login-social-logo.google-logo {
+  width: 25px;
+  height: 25px;
 }
 
-
-/* =========================================================
-   GITHUB
-   ========================================================= */
-
-.github-css-logo {
+.el-login-social-logo.github-logo {
   width: 27px;
   height: 27px;
-
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  background: #f2f2f2;
-
-  color: #10141d;
-
-  border-radius: 50%;
-
-  font-size: 9px;
-  font-weight: 900;
 }
-
-
-/* =========================================================
-   ROBLOX
-   ========================================================= */
-
-.el-login-socials
-.roblox i {
-  position: relative;
-
-  width: 23px;
-  height: 23px;
-
-  display: block;
-
-  background: white;
-
-  transform:
-    rotate(15deg);
-}
-
-
-.el-login-socials
-.roblox i::after {
-  content: "";
-
-  position: absolute;
-
-  width: 8px;
-  height: 8px;
-
-  left: 50%;
-  top: 50%;
-
-  transform:
-    translate(
-      -50%,
-      -50%
-    );
-
-  background: #151e2d;
-}
-
 
 /* =========================================================
    CRIAR CONTA
@@ -741,138 +650,354 @@ label:not(:first-child) {
 }
 
 /* =========================================================
-   LOGIN — MOVIMENTO DAS LUZES
-   Uma única implementação, sem sobrescritas duplicadas.
+   LOGIN — LUZES ANIMADAS DE FUNDO
    ========================================================= */
 
-@keyframes eliseo-login-glow-left {
-  0% {
-    transform:
-      translate3d(0, -15px, 0)
-      scale(1);
-
-    opacity: 0.22;
-  }
-
-  35% {
-    transform:
-      translate3d(125px, -35px, 0)
-      scale(1.12);
-
-    opacity: 0.34;
-  }
-
-  70% {
-    transform:
-      translate3d(220px, 75px, 0)
-      scale(0.96);
-
-    opacity: 0.42;
-  }
-
-  100% {
-    transform:
-      translate3d(95px, 155px, 0)
-      scale(1.1);
-
-    opacity: 0.28;
-  }
-}
-
-
-@keyframes eliseo-login-glow-right {
-  0% {
-    transform:
-      translate3d(0, 10px, 0)
-      scale(1);
-
-    opacity: 0.22;
-  }
-
-  35% {
-    transform:
-      translate3d(-145px, -45px, 0)
-      scale(1.13);
-
-    opacity: 0.38;
-  }
-
-  70% {
-    transform:
-      translate3d(-225px, -120px, 0)
-      scale(0.95);
-
-    opacity: 0.43;
-  }
-
-  100% {
-    transform:
-      translate3d(-80px, -175px, 0)
-      scale(1.08);
-
-    opacity: 0.3;
-  }
-}
-
-
-/* Fallback: se o Login.tsx não tiver os elementos .el-login-glow,
-   as mesmas luzes são criadas aqui sem duplicar o efeito. */
-
 .el-login-page {
+  position: fixed;
+  inset: 0;
+
+  overflow: hidden;
   isolation: isolate;
 }
 
-.el-login-page:not(:has(.el-login-glow))::before,
-.el-login-page:not(:has(.el-login-glow))::after {
+
+/* luz azul maior */
+
+.el-login-page::before {
   content: "";
 
   position: absolute;
 
-  width: 400px;
-  height: 400px;
+  width: 520px;
+  height: 520px;
 
-  z-index: 0;
+  left: -120px;
+  top: -150px;
 
-  border-radius: 50%;
+  z-index: -2;
 
-  filter: blur(90px);
+  background:
+    radial-gradient(
+      circle,
+      rgba(45, 137, 255, 0.22) 0%,
+      rgba(35, 104, 209, 0.12) 35%,
+      transparent 70%
+    );
+
+  filter:
+    blur(55px);
 
   pointer-events: none;
 
-  will-change: transform, opacity;
-}
-
-.el-login-page:not(:has(.el-login-glow))::before {
-  left: -160px;
-  top: 25%;
-
-  background: #1667ff;
-
   animation:
-    eliseo-login-glow-left
-    5.8s
-    ease-in-out
-    infinite alternate;
-}
-
-.el-login-page:not(:has(.el-login-glow))::after {
-  right: -140px;
-  bottom: 10%;
-
-  background: #1767ff;
-
-  animation:
-    eliseo-login-glow-right
-    7.2s
+    eliseo-login-light-one
+    13s
     ease-in-out
     infinite alternate;
 }
 
 
-@media (prefers-reduced-motion: reduce) {
-  .el-login-glow,
+/* luz azul/roxa do outro lado */
+
+.el-login-page::after {
+  content: "";
+
+  position: absolute;
+
+  width: 620px;
+  height: 620px;
+
+  right: -190px;
+  bottom: -220px;
+
+  z-index: -2;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(72, 104, 255, 0.19) 0%,
+      rgba(79, 69, 194, 0.10) 40%,
+      transparent 72%
+    );
+
+  filter:
+    blur(65px);
+
+  pointer-events: none;
+
+  animation:
+    eliseo-login-light-two
+    16s
+    ease-in-out
+    infinite alternate;
+}
+
+
+/* garante o cartão acima das luzes */
+
+.el-login-card {
+  position: relative;
+
+  z-index: 2;
+}
+
+
+/* =========================================================
+   MOVIMENTOS
+   ========================================================= */
+
+@keyframes eliseo-login-light-one {
+
+  0% {
+    transform:
+      translate3d(
+        0,
+        0,
+        0
+      )
+      scale(1);
+  }
+
+  35% {
+    transform:
+      translate3d(
+        90px,
+        45px,
+        0
+      )
+      scale(1.08);
+  }
+
+  70% {
+    transform:
+      translate3d(
+        35px,
+        130px,
+        0
+      )
+      scale(0.95);
+  }
+
+  100% {
+    transform:
+      translate3d(
+        145px,
+        75px,
+        0
+      )
+      scale(1.12);
+  }
+
+}
+
+
+@keyframes eliseo-login-light-two {
+
+  0% {
+    transform:
+      translate3d(
+        0,
+        0,
+        0
+      )
+      scale(1);
+  }
+
+  30% {
+    transform:
+      translate3d(
+        -80px,
+        -35px,
+        0
+      )
+      scale(1.07);
+  }
+
+  65% {
+    transform:
+      translate3d(
+        -30px,
+        -120px,
+        0
+      )
+      scale(0.94);
+  }
+
+  100% {
+    transform:
+      translate3d(
+        -140px,
+        -75px,
+        0
+      )
+      scale(1.1);
+  }
+
+}
+
+
+/* =========================================================
+   ACESSIBILIDADE
+   ========================================================= */
+
+@media (
+  prefers-reduced-motion:
+  reduce
+) {
+
   .el-login-page::before,
   .el-login-page::after {
-    animation: none !important;
+    animation: none;
+  }
+
+}
+/* =========================================================
+   LOGIN — LUZES ANIMADAS CORRIGIDAS
+   ========================================================= */
+
+.el-login-page {
+  position: fixed;
+  inset: 0;
+
+  overflow: hidden;
+  isolation: isolate;
+}
+
+
+/* LUZ 1 */
+
+.el-login-page::before {
+  content: "";
+
+  position: absolute;
+
+  width: 650px;
+  height: 650px;
+
+  left: -180px;
+  top: -220px;
+
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(49, 143, 255, 0.35) 0%,
+      rgba(33, 91, 190, 0.16) 38%,
+      transparent 70%
+    );
+
+  filter: blur(70px);
+
+  pointer-events: none;
+
+  animation:
+    login-light-left
+    11s
+    ease-in-out
+    infinite alternate;
+}
+
+
+/* LUZ 2 */
+
+.el-login-page::after {
+  content: "";
+
+  position: absolute;
+
+  width: 700px;
+  height: 700px;
+
+  right: -220px;
+  bottom: -260px;
+
+  z-index: 0;
+
+  background:
+    radial-gradient(
+      circle,
+      rgba(91, 78, 255, 0.28) 0%,
+      rgba(48, 86, 200, 0.14) 40%,
+      transparent 72%
+    );
+
+  filter: blur(75px);
+
+  pointer-events: none;
+
+  animation:
+    login-light-right
+    14s
+    ease-in-out
+    infinite alternate;
+}
+
+
+/* cartão sempre acima */
+
+.el-login-card {
+  position: relative;
+  z-index: 2;
+}
+
+
+/* =========================================================
+   ANIMAÇÕES
+   ========================================================= */
+
+@keyframes login-light-left {
+
+  0% {
+    transform:
+      translate3d(0, 0, 0)
+      scale(1);
+  }
+
+  33% {
+    transform:
+      translate3d(130px, 70px, 0)
+      scale(1.12);
+  }
+
+  66% {
+    transform:
+      translate3d(70px, 180px, 0)
+      scale(0.95);
+  }
+
+  100% {
+    transform:
+      translate3d(190px, 100px, 0)
+      scale(1.08);
+  }
+}
+
+
+@keyframes login-light-right {
+
+  0% {
+    transform:
+      translate3d(0, 0, 0)
+      scale(1);
+  }
+
+  35% {
+    transform:
+      translate3d(-120px, -80px, 0)
+      scale(1.1);
+  }
+
+  70% {
+    transform:
+      translate3d(-60px, -190px, 0)
+      scale(0.96);
+  }
+
+  100% {
+    transform:
+      translate3d(-190px, -110px, 0)
+      scale(1.12);
   }
 }

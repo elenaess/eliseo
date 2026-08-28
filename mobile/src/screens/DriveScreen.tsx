@@ -52,6 +52,11 @@ import {
 } from '@react-native-documents/viewer';
 
 import {
+  DriveFavoritesPanel,
+  LibraryPanel,
+} from '../components/LibraryPanels';
+
+import {
   NativePressable,
 } from '../components/NativePressable';
 
@@ -65,11 +70,14 @@ import {
   ELISEO_DRIVE_LIMIT_BYTES,
   EliseoDriveFile,
   EliseoDriveFolder,
+  listenToDriveFavorites,
   listenToDriveFiles,
   listenToDriveFolders,
   listenToDriveUsage,
   releaseDriveBytes,
   reserveDriveBytes,
+  toggleDriveFileFavorite,
+  isAllowedDriveUpload,
 } from '../services/drive';
 
 import {
@@ -529,6 +537,9 @@ function DriveScreenContent() {
   ] =
     useState('');
 
+  const [favoriteFileIds, setFavoriteFileIds] =
+    useState<string[]>([]);
+
   const [
     activeTab,
     setActiveTab,
@@ -633,10 +644,17 @@ function DriveScreenContent() {
         setUsedBytes,
       );
 
+    const stopFavorites =
+      listenToDriveFavorites(
+        currentUid,
+        setFavoriteFileIds,
+      );
+
     return () => {
       stopFolders();
       stopFiles();
       stopUsage();
+      stopFavorites();
     };
   }, [
     currentUid,
@@ -886,6 +904,13 @@ function DriveScreenContent() {
               0,
           );
 
+        /* ELISEO_UPLOAD_TYPE_VALIDATION */
+        if (!isAllowedDriveUpload(picked.name ?? 'arquivo', picked.type)) {
+          throw new Error(
+            `${picked.name ?? 'Esse arquivo'} não é um tipo permitido. Use imagem/GIF, PDF, vídeo, PPT/PPTX ou HTML.`,
+          );
+        }
+
         if (
           originalSize >
           ELISEO_DRIVE_LIMIT_BYTES
@@ -1075,49 +1100,15 @@ function DriveScreenContent() {
   }
 
   function chooseTab(
-    tab:
-      | 'folders'
-      | 'library'
-      | 'favorites',
+    tab: 'folders' | 'library' | 'favorites',
   ) {
-    if (
-      tab ===
-      activeTab
-    ) {
-      return;
-    }
-
-    if (
-      tabSwitchTimer.current
-    ) {
-      clearTimeout(
-        tabSwitchTimer.current,
-      );
-    }
-
-    setTabSwitching(true);
+    /* ELISEO_LIBRARY_TABS */
     setActiveTab(tab);
-
-    if (
-      tab !==
-      'folders'
-    ) {
-      setError(
-        tab ===
-          'library'
-          ? 'Biblioteca será conectada em seguida.'
-          : 'Favoritos serão conectados em seguida.',
-      );
-    } else {
-      setError('');
+    setError('');
+    if (tab !== 'folders') {
+      setSearch('');
+      setSearchOpen(false);
     }
-
-    tabSwitchTimer.current =
-      setTimeout(() => {
-        setTabSwitching(false);
-        tabSwitchTimer.current =
-          null;
-      }, 105);
   }
 
   /* =======================================================
@@ -1811,12 +1802,27 @@ function DriveScreenContent() {
                           </Text>
                         </View>
 
-                        <MoreHorizontal
-                          size={18}
-                          color={
-                            colors.faint
-                          }
-                        />
+                        {/* ELISEO_DRIVE_FILE_STAR */}
+                        <NativePressable
+                          haptic
+                          onPress={event => {
+                            event.stopPropagation();
+                            void toggleDriveFileFavorite(
+                              currentUid,
+                              file.id,
+                              !favoriteFileIds.includes(file.id),
+                            );
+                          }}
+                          style={{width: 40, height: 40}}
+                        >
+                          <View style={{flex: 1, alignItems: 'center', justifyContent: 'center'}}>
+                            <Star
+                              size={18}
+                              color={favoriteFileIds.includes(file.id) ? '#F2B94B' : colors.faint}
+                              fill={favoriteFileIds.includes(file.id) ? '#F2B94B' : 'transparent'}
+                            />
+                          </View>
+                        </NativePressable>
                       </View>
                     </NativePressable>
                   ),
@@ -1921,50 +1927,14 @@ function DriveScreenContent() {
             </>
           )}
 
-          {activeTab !==
-            'folders' && (
-            <View
-              style={
-                styles.placeholder
-              }
-            >
-              {activeTab ===
-              'library' ? (
-                <BookOpen
-                  size={38}
-                  color={
-                    colors.blue
-                  }
-                />
-              ) : (
-                <Star
-                  size={38}
-                  color={
-                    colors.blue
-                  }
-                />
-              )}
-
-              <Text
-                style={
-                  styles.placeholderTitle
-                }
-              >
-                {activeTab ===
-                'library'
-                  ? 'Biblioteca'
-                  : 'Favoritos'}
-              </Text>
-
-              <Text
-                style={
-                  styles.placeholderText
-                }
-              >
-                Essa área será conectada depois.
-              </Text>
-            </View>
+          {activeTab === 'library' && (
+            <LibraryPanel />
           )}
+
+          {activeTab === 'favorites' && (
+            <DriveFavoritesPanel />
+          )}
+
           </ScrollView>
         )}
 
@@ -2240,14 +2210,14 @@ const styles =
     },
 
     driveContentBlanker: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
 
       zIndex: 20,
       elevation: 20,
     },
 
     driveTabLoader: {
-      ...StyleSheet.absoluteFillObject,
+      ...StyleSheet.absoluteFill,
 
       alignItems:
         'center',

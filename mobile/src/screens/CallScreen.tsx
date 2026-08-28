@@ -27,6 +27,7 @@ import {
   MicOff,
   MoreHorizontal,
   PhoneOff,
+  Cast,
   UserPlus,
   Video,
   VideoOff,
@@ -161,10 +162,39 @@ type PeerBundle = {
     string;
 
   audioSender:
-    any;
+    any |
+    null;
 
   videoSender:
-    any;
+    any |
+    null;
+
+  stopSignal:
+    () => void;
+
+  stopCandidates:
+    () => void;
+
+  processedCandidates:
+    Set<string>;
+
+  queuedCandidates:
+    CandidateData[];
+};
+
+type ScreenPeerBundle = {
+  pc:
+    RTCPeerConnection;
+
+  remoteUid:
+    string;
+
+  remoteSessionId:
+    string;
+
+  sender:
+    any |
+    null;
 
   stopSignal:
     () => void;
@@ -502,11 +532,11 @@ async function requestMicrophonePermission() {
     await PermissionsAndroid.request(
       permission,
       {
-        title: 'PermissÃ£o de microfone',
+        title: 'Permissão de microfone',
         message:
-          'O ElÃ­seo precisa acessar o microfone para participar das chamadas.',
+          'O Elíseo precisa acessar o microfone para participar das chamadas.',
         buttonPositive: 'Permitir',
-        buttonNegative: 'Agora nÃ£o',
+        buttonNegative: 'Agora não',
       },
     );
 
@@ -537,11 +567,11 @@ async function requestCameraPermission() {
     await PermissionsAndroid.request(
       permission,
       {
-        title: 'PermissÃ£o de cÃ¢mera',
+        title: 'Permissão de câmera',
         message:
-          'O ElÃ­seo precisa acessar a cÃ¢mera para participar de chamadas com vÃ­deo.',
+          'O Elíseo precisa acessar a câmera para participar de chamadas com vídeo.',
         buttonPositive: 'Permitir',
-        buttonNegative: 'Agora nÃ£o',
+        buttonNegative: 'Agora não',
       },
     );
 
@@ -719,7 +749,7 @@ export function CallScreen({
           title:
             routeParams
               .title ??
-            'Chamada do ElÃ­seo',
+            'Chamada do Elíseo',
 
           startWithVideo:
             routeParams
@@ -782,6 +812,32 @@ export function CallScreen({
       MediaStream |
       null
     >(null);
+
+  const [
+    remoteScreenStreams,
+    setRemoteScreenStreams,
+  ] =
+    useState<
+      Record<
+        string,
+        MediaStream
+      >
+    >({});
+
+  const [
+    localScreenStream,
+    setLocalScreenStream,
+  ] =
+    useState<
+      MediaStream |
+      null
+    >(null);
+
+  const [
+    screenSharing,
+    setScreenSharing,
+  ] =
+    useState(false);
 
   const [
     camera,
@@ -868,6 +924,25 @@ export function CallScreen({
     >(
       new Map(),
     );
+
+  const localScreenStreamRef =
+    useRef<
+      MediaStream |
+      null
+    >(null);
+
+  const screenPeersRef =
+    useRef<
+      Map<
+        string,
+        ScreenPeerBundle
+      >
+    >(
+      new Map(),
+    );
+
+  const stoppingScreenRef =
+    useRef(false);
 
   const participantsRef =
     useRef<
@@ -1006,6 +1081,618 @@ export function CallScreen({
       [],
     );
 
+
+  /* =======================================================
+     SCREEN SHARE — MESH INDEPENDENTE
+     ======================================================= */
+
+  /*
+   * ELISEO_SCREEN_MESH_V3
+   *
+   * Esta malha NÃO transporta microfone
+   * nem câmera. Ela usa uma segunda
+   * RTCPeerConnection por par, com
+   * sinalização __screen.
+   */
+
+  const closeScreenPeer =
+    useCallback(
+      (
+        remoteUid:
+          string,
+      ) => {
+        const bundle =
+          screenPeersRef
+            .current
+            .get(
+              remoteUid,
+            );
+
+        if (!bundle) {
+          return;
+        }
+
+        bundle.stopSignal();
+        bundle.stopCandidates();
+
+        try {
+          bundle.pc.ontrack =
+            null;
+
+          bundle.pc.onicecandidate =
+            null;
+
+          bundle.pc.close();
+        } catch {
+          // ignore
+        }
+
+        screenPeersRef
+          .current
+          .delete(
+            remoteUid,
+          );
+
+        setRemoteScreenStreams(
+          current => {
+            if (
+              !current[
+                remoteUid
+              ]
+            ) {
+              return current;
+            }
+
+            const next = {
+              ...current,
+            };
+
+            delete next[
+              remoteUid
+            ];
+
+            return next;
+          },
+        );
+      },
+      [],
+    );
+
+  const ensureScreenPeer =
+    useCallback(
+      async (
+        remote:
+          EliseoCallParticipant,
+      ) => {
+        if (
+          !currentUid ||
+          !sessionIdRef.current ||
+          remote.uid ===
+            currentUid
+        ) {
+          return;
+        }
+
+        const existing =
+          screenPeersRef
+            .current
+            .get(
+              remote.uid,
+            );
+
+        if (
+          existing &&
+          existing
+            .remoteSessionId ===
+            remote.sessionId
+        ) {
+          return;
+        }
+
+        if (existing) {
+          closeScreenPeer(
+            remote.uid,
+          );
+        }
+
+        const pc =
+          new RTCPeerConnection(
+            {
+              iceServers:
+                ICE_SERVERS,
+            },
+          );
+
+        const initiator =
+          currentUid.localeCompare(
+            remote.uid,
+          ) <
+          0;
+
+        const bundle:
+          ScreenPeerBundle = {
+          pc,
+
+          remoteUid:
+            remote.uid,
+
+          remoteSessionId:
+            remote.sessionId,
+
+          sender:
+            null,
+
+          stopSignal:
+            () => {},
+
+          stopCandidates:
+            () => {},
+
+          processedCandidates:
+            new Set(),
+
+          queuedCandidates:
+            [],
+        };
+
+        screenPeersRef
+          .current
+          .set(
+            remote.uid,
+            bundle,
+          );
+
+        const remoteScreenStream =
+          new MediaStream();
+
+        setRemoteScreenStreams(
+          current => ({
+            ...current,
+
+            [remote.uid]:
+              remoteScreenStream,
+          }),
+        );
+
+        try {
+          if (initiator) {
+            const screenTransceiver =
+              pc.addTransceiver(
+                'video',
+                {
+                  direction:
+                    'sendrecv',
+                },
+              );
+
+            bundle.sender =
+              screenTransceiver
+                .sender;
+
+            await bundle
+              .sender
+              .replaceTrack(
+                localScreenStreamRef
+                  .current
+                  ?.getVideoTracks()[0] ??
+                  null,
+              );
+          }
+
+          pc.ontrack =
+            (event: any) => {
+              const track =
+                event.track;
+
+              if (
+                !track ||
+                track.kind !==
+                  'video'
+              ) {
+                return;
+              }
+
+              const exists =
+                remoteScreenStream
+                  .getVideoTracks()
+                  .some(
+                    existingTrack =>
+                      existingTrack.id ===
+                      track.id,
+                  );
+
+              if (!exists) {
+                remoteScreenStream
+                  .addTrack(
+                    track,
+                  );
+              }
+
+              setRemoteScreenStreams(
+                current => ({
+                  ...current,
+
+                  [remote.uid]:
+                    remoteScreenStream,
+                }),
+              );
+            };
+
+          const basePairId =
+            makeCallPairId(
+              currentUid,
+
+              sessionIdRef.current,
+
+              remote.uid,
+
+              remote.sessionId,
+            );
+
+          const pairId =
+            `${basePairId}__screen`;
+
+          const signalRef =
+            getCallSignalRef(
+              call.roomId,
+              pairId,
+            );
+
+          const candidatesRef =
+            getCallCandidatesRef(
+              call.roomId,
+              pairId,
+            );
+
+          async function flushScreenCandidates() {
+            if (
+              !pc.remoteDescription
+            ) {
+              return;
+            }
+
+            while (
+              bundle
+                .queuedCandidates
+                .length >
+              0
+            ) {
+              const candidate =
+                bundle
+                  .queuedCandidates
+                  .shift();
+
+              if (!candidate) {
+                continue;
+              }
+
+              try {
+                await pc
+                  .addIceCandidate(
+                    new RTCIceCandidate(
+                      {
+                        candidate:
+                          candidate
+                            .candidate,
+
+                        sdpMid:
+                          candidate
+                            .sdpMid ??
+                          null,
+
+                        sdpMLineIndex:
+                          candidate
+                            .sdpMLineIndex ??
+                          null,
+                      },
+                    ),
+                  );
+              } catch {
+                // duplicado/antigo
+              }
+            }
+          }
+
+          bundle.stopSignal =
+            onSnapshot(
+              signalRef,
+
+              async snapshot => {
+                if (
+                  !snapshot.exists() ||
+                  pc.connectionState ===
+                    'closed'
+                ) {
+                  return;
+                }
+
+                const data =
+                  snapshot.data();
+
+                try {
+                  if (
+                    !initiator &&
+                    data?.offer &&
+                    !pc
+                      .remoteDescription
+                  ) {
+                    await pc
+                      .setRemoteDescription(
+                        data.offer,
+                      );
+
+                    const screenTransceiver =
+                      pc
+                        .getTransceivers()
+                        .find(
+                          transceiver =>
+                            transceiver
+                              .receiver
+                              ?.track
+                              ?.kind ===
+                            'video',
+                        );
+
+                    if (
+                      screenTransceiver
+                    ) {
+                      screenTransceiver.direction =
+                        'sendrecv';
+
+                      bundle.sender =
+                        screenTransceiver
+                          .sender;
+
+                      await bundle
+                        .sender
+                        .replaceTrack(
+                          localScreenStreamRef
+                            .current
+                            ?.getVideoTracks()[0] ??
+                            null,
+                        );
+                    }
+
+                    await flushScreenCandidates();
+
+                    const answer =
+                      await pc
+                        .createAnswer();
+
+                    await pc
+                      .setLocalDescription(
+                        answer,
+                      );
+
+                    await setDoc(
+                      signalRef,
+
+                      {
+                        answer:
+                          serializeDescription(
+                            answer,
+                          ),
+
+                        answerFrom:
+                          currentUid,
+
+                        updatedAt:
+                          serverTimestamp(),
+                      },
+
+                      {
+                        merge: true,
+                      },
+                    );
+                  }
+
+                  if (
+                    initiator &&
+                    data?.answer &&
+                    !pc
+                      .remoteDescription
+                  ) {
+                    await pc
+                      .setRemoteDescription(
+                        data.answer,
+                      );
+
+                    await flushScreenCandidates();
+                  }
+                } catch (
+                  caught
+                ) {
+                  console.warn(
+                    'Falha na sinalização da tela:',
+                    caught,
+                  );
+                }
+              },
+            );
+
+          bundle.stopCandidates =
+            onSnapshot(
+              candidatesRef,
+
+              snapshot => {
+                snapshot
+                  .docChanges()
+                  .forEach(
+                    change => {
+                      if (
+                        change.type !==
+                          'added' ||
+                        bundle
+                          .processedCandidates
+                          .has(
+                            change
+                              .doc.id,
+                          )
+                      ) {
+                        return;
+                      }
+
+                      bundle
+                        .processedCandidates
+                        .add(
+                          change
+                            .doc.id,
+                        );
+
+                      const data =
+                        change.doc.data();
+
+                      if (
+                        data?.from ===
+                        currentUid
+                      ) {
+                        return;
+                      }
+
+                      const candidate =
+                        data
+                          ?.candidate as
+                          CandidateData;
+
+                      if (
+                        !candidate
+                          ?.candidate
+                      ) {
+                        return;
+                      }
+
+                      if (
+                        pc.remoteDescription
+                      ) {
+                        pc.addIceCandidate(
+                          new RTCIceCandidate(
+                            {
+                              candidate:
+                                candidate
+                                  .candidate,
+
+                              sdpMid:
+                                candidate
+                                  .sdpMid ??
+                                null,
+
+                              sdpMLineIndex:
+                                candidate
+                                  .sdpMLineIndex ??
+                                null,
+                            },
+                          ),
+                        ).catch(
+                          () => {},
+                        );
+                      } else {
+                        bundle
+                          .queuedCandidates
+                          .push(
+                            candidate,
+                          );
+                      }
+                    },
+                  );
+              },
+            );
+
+          pc.onicecandidate =
+            (event: any) => {
+              if (
+                !event.candidate
+              ) {
+                return;
+              }
+
+              addDoc(
+                candidatesRef,
+
+                {
+                  from:
+                    currentUid,
+
+                  candidate:
+                    serializeCandidate(
+                      event.candidate,
+                    ),
+
+                  createdAt:
+                    serverTimestamp(),
+                },
+              ).catch(
+                caught => {
+                  console.warn(
+                    'Falha ao enviar ICE da tela:',
+                    caught,
+                  );
+                },
+              );
+            };
+
+          if (initiator) {
+            const offer =
+              await pc
+                .createOffer();
+
+            await pc
+              .setLocalDescription(
+                offer,
+              );
+
+            await setDoc(
+              signalRef,
+
+              {
+                aUid:
+                  currentUid,
+
+                bUid:
+                  remote.uid,
+
+                media:
+                  'screen',
+
+                offer:
+                  serializeDescription(
+                    offer,
+                  ),
+
+                offerFrom:
+                  currentUid,
+
+                createdAt:
+                  serverTimestamp(),
+
+                updatedAt:
+                  serverTimestamp(),
+              },
+
+              {
+                merge: true,
+              },
+            );
+          }
+        } catch (
+          caught
+        ) {
+          console.warn(
+            'Falha ao criar peer de tela:',
+            caught,
+          );
+
+          closeScreenPeer(
+            remote.uid,
+          );
+        }
+      },
+      [
+        call.roomId,
+        closeScreenPeer,
+        currentUid,
+      ],
+    );
+
   /* =======================================================
      ENSURE PEER
      ======================================================= */
@@ -1056,23 +1743,24 @@ export function CallScreen({
             },
           );
 
-        const audioTransceiver =
-          pc.addTransceiver(
-            'audio',
-            {
-              direction:
-                'sendrecv',
-            },
-          );
-
-        const videoTransceiver =
-          pc.addTransceiver(
-            'video',
-            {
-              direction:
-                'sendrecv',
-            },
-          );
+        /*
+         * ELISEO_CALL_MESH_V2
+         *
+         * Em uma call multipessoa somente
+         * o offerer cria os m-lines antes
+         * da oferta.
+         *
+         * O answerer primeiro aplica a
+         * oferta remota e reutiliza os
+         * transceivers associados a ela.
+         * Isso garante envio E recebimento
+         * de audio/video em cada par do mesh.
+         */
+        const initiator =
+          currentUid.localeCompare(
+            remote.uid,
+          ) <
+          0;
 
         const bundle:
           PeerBundle = {
@@ -1085,12 +1773,10 @@ export function CallScreen({
             remote.sessionId,
 
           audioSender:
-            audioTransceiver
-              .sender,
+            null,
 
           videoSender:
-            videoTransceiver
-              .sender,
+            null,
 
           stopSignal:
             () => {},
@@ -1125,17 +1811,45 @@ export function CallScreen({
               ?.getVideoTracks()[0] ??
             null;
 
-          await bundle
-            .audioSender
-            .replaceTrack(
-              localAudio,
-            );
+          if (
+            initiator
+          ) {
+            const audioTransceiver =
+              pc.addTransceiver(
+                'audio',
+                {
+                  direction:
+                    'sendrecv',
+                },
+              );
 
-          await bundle
-            .videoSender
-            .replaceTrack(
-              localVideo,
-            );
+            const videoTransceiver =
+              pc.addTransceiver(
+                'video',
+                {
+                  direction:
+                    'sendrecv',
+                },
+              );
+
+            bundle.audioSender =
+              audioTransceiver.sender;
+
+            bundle.videoSender =
+              videoTransceiver.sender;
+
+            await bundle
+              .audioSender
+              .replaceTrack(
+                localAudio,
+              );
+
+            await bundle
+              .videoSender
+              .replaceTrack(
+                localVideo,
+              );
+          }
 
           const remoteStream =
             new MediaStream();
@@ -1152,7 +1866,7 @@ export function CallScreen({
           /*
            * IMPORTANTE:
            * usamos ontrack em vez de
-           * addEventListener para nÃ£o
+           * addEventListener para não
            * bater na tipagem do projeto.
            */
           pc.ontrack =
@@ -1237,12 +1951,6 @@ export function CallScreen({
               pairId,
             );
 
-          const initiator =
-            currentUid.localeCompare(
-              remote.uid,
-            ) <
-            0;
-
           async function flushCandidates() {
             if (
               !pc.remoteDescription
@@ -1321,6 +2029,76 @@ export function CallScreen({
                         data.offer,
                       );
 
+                    /*
+                     * Agora os transceivers
+                     * pertencem aos m-lines
+                     * efetivamente oferecidos.
+                     * Anexamos mic/camera antes
+                     * de createAnswer().
+                     */
+                    const remoteTransceivers =
+                      pc.getTransceivers();
+
+                    const audioTransceiver =
+                      remoteTransceivers
+                        .find(
+                          transceiver =>
+                            transceiver
+                              .receiver
+                              ?.track
+                              ?.kind ===
+                            'audio',
+                        );
+
+                    const videoTransceiver =
+                      remoteTransceivers
+                        .find(
+                          transceiver =>
+                            transceiver
+                              .receiver
+                              ?.track
+                              ?.kind ===
+                            'video',
+                        );
+
+                    if (
+                      audioTransceiver
+                    ) {
+                      audioTransceiver.direction =
+                        'sendrecv';
+
+                      bundle.audioSender =
+                        audioTransceiver.sender;
+
+                      await bundle
+                        .audioSender
+                        .replaceTrack(
+                          localStreamRef
+                            .current
+                            ?.getAudioTracks()[0] ??
+                            null,
+                        );
+                    }
+
+                    if (
+                      videoTransceiver
+                    ) {
+                      videoTransceiver.direction =
+                        'sendrecv';
+
+                      bundle.videoSender =
+                        videoTransceiver.sender;
+
+                      await bundle
+                        .videoSender
+                        .replaceTrack(
+                          localStreamRef
+                            .current
+                            ?.getVideoTracks()[0] ??
+                            null,
+                        );
+                    }
+
                     await flushCandidates();
 
                     const answer =
@@ -1372,7 +2150,7 @@ export function CallScreen({
                   caught
                 ) {
                   console.warn(
-                    'Falha na sinalizaÃ§Ã£o RTC:',
+                    'Falha na sinalização RTC:',
                     caught,
                   );
                 }
@@ -1591,8 +2369,8 @@ export function CallScreen({
 
     /*
      * Copiamos os valores aqui.
-     * Assim o TypeScript nÃ£o perde
-     * o narrowing dentro da funÃ§Ã£o
+     * Assim o TypeScript não perde
+     * o narrowing dentro da função
      * async start().
      */
     const userUid =
@@ -1692,12 +2470,12 @@ export function CallScreen({
         caught
       ) {
         console.warn(
-          'Microfone indisponÃ­vel:',
+          'Microfone indisponível:',
           caught,
         );
       }
 
-      /* CÃ‚MERA */
+      /* CÂMERA */
 
       if (
         call.startWithVideo
@@ -1739,7 +2517,7 @@ export function CallScreen({
           caught
         ) {
           console.warn(
-            'CÃ¢mera indisponÃ­vel:',
+            'Câmera indisponível:',
             caught,
           );
         }
@@ -1802,7 +2580,7 @@ export function CallScreen({
                 .split(
                   '@',
                 )[0] ||
-              'UsuÃ¡rio',
+              'Usuário',
 
             avatar:
               profile
@@ -1899,6 +2677,10 @@ export function CallScreen({
                 void ensurePeer(
                   remote,
                 );
+
+                void ensureScreenPeer(
+                  remote,
+                );
               }
 
               Array.from(
@@ -1926,6 +2708,34 @@ export function CallScreen({
                   }
                 },
               );
+
+
+              Array.from(
+                screenPeersRef.current
+                  .entries(),
+              ).forEach(
+                ([
+                  remoteUid,
+                  bundle,
+                ]) => {
+                  const remote =
+                    remoteByUid.get(
+                      remoteUid,
+                    );
+
+                  if (
+                    !remote ||
+                    remote.sessionId !==
+                      bundle
+                        .remoteSessionId
+                  ) {
+                    closeScreenPeer(
+                      remoteUid,
+                    );
+                  }
+                },
+              );
+
             },
           );
 
@@ -1953,7 +2763,7 @@ export function CallScreen({
         setError(
           caught instanceof Error
             ? caught.message
-            : 'NÃ£o foi possÃ­vel entrar na chamada.',
+            : 'Não foi possível entrar na chamada.',
         );
       }
     }
@@ -1982,6 +2792,29 @@ export function CallScreen({
       ).forEach(
         closePeer,
       );
+
+      Array.from(
+        screenPeersRef.current
+          .keys(),
+      ).forEach(
+        closeScreenPeer,
+      );
+
+      localScreenStreamRef
+        .current
+        ?.getTracks()
+        .forEach(
+          track => {
+            try {
+              track.stop();
+            } catch {
+              // ignore
+            }
+          },
+        );
+
+      localScreenStreamRef.current =
+        null;
 
       localStreamRef
         .current
@@ -2014,7 +2847,9 @@ export function CallScreen({
   }, [
     call,
     closePeer,
+    closeScreenPeer,
     ensurePeer,
+    ensureScreenPeer,
   ]);
 
   /* =======================================================
@@ -2225,6 +3060,237 @@ export function CallScreen({
     currentUid,
   ]);
 
+
+  /* =======================================================
+     SCREEN SHARE
+     ======================================================= */
+
+  const stopScreenShare =
+    useCallback(
+      async (
+        updatePresence =
+          true,
+      ) => {
+        if (
+          stoppingScreenRef
+            .current
+        ) {
+          return;
+        }
+
+        stoppingScreenRef.current =
+          true;
+
+        try {
+          const stream =
+            localScreenStreamRef
+              .current;
+
+          localScreenStreamRef.current =
+            null;
+
+          for (
+            const bundle of
+            screenPeersRef.current
+              .values()
+          ) {
+            if (
+              bundle.sender
+            ) {
+              await bundle
+                .sender
+                .replaceTrack(
+                  null,
+                )
+                .catch(
+                  () => {},
+                );
+            }
+          }
+
+          stream
+            ?.getTracks()
+            .forEach(
+              track => {
+                try {
+                  track.stop();
+                } catch {
+                  // ignore
+                }
+              },
+            );
+
+          setLocalScreenStream(
+            null,
+          );
+
+          setScreenSharing(
+            false,
+          );
+
+          if (
+            updatePresence &&
+            currentUid
+          ) {
+            await updateCallParticipant(
+              call.roomId,
+
+              currentUid,
+
+              {
+                screenEnabled:
+                  false,
+              },
+            ).catch(
+              () => {},
+            );
+          }
+        } finally {
+          stoppingScreenRef.current =
+            false;
+        }
+      },
+      [
+        call.roomId,
+        currentUid,
+      ],
+    );
+
+  const toggleScreenShare =
+    useCallback(
+      async () => {
+        if (
+          !currentUid
+        ) {
+          return;
+        }
+
+        if (
+          screenSharing
+        ) {
+          await stopScreenShare(
+            true,
+          );
+
+          setError('');
+
+          return;
+        }
+
+        try {
+          const displayStream =
+            await (
+              mediaDevices as
+                any
+            ).getDisplayMedia(
+              {
+                android: {
+                  createConfigForDefaultDisplay:
+                    true,
+
+                  resolutionScale:
+                    0.72,
+                },
+              },
+            );
+
+          const screenTrack =
+            displayStream
+              ?.getVideoTracks?.()[0] ??
+            null;
+
+          if (
+            !displayStream ||
+            !screenTrack
+          ) {
+            throw new Error(
+              'Nenhuma tela foi selecionada.',
+            );
+          }
+
+          localScreenStreamRef.current =
+            displayStream;
+
+          setLocalScreenStream(
+            displayStream,
+          );
+
+          setScreenSharing(
+            true,
+          );
+
+          /*
+           * Se o usuário parar pelo próprio
+           * seletor do Android, limpamos
+           * somente a malha de tela.
+           */
+          (
+            screenTrack as
+              any
+          ).onended =
+            () => {
+              void stopScreenShare(
+                true,
+              );
+            };
+
+          for (
+            const bundle of
+            screenPeersRef.current
+              .values()
+          ) {
+            if (
+              bundle.sender
+            ) {
+              await bundle
+                .sender
+                .replaceTrack(
+                  screenTrack,
+                );
+            }
+          }
+
+          await updateCallParticipant(
+            call.roomId,
+
+            currentUid,
+
+            {
+              screenEnabled:
+                true,
+            },
+          );
+
+          setError('');
+        } catch (
+          caught
+        ) {
+          setLocalScreenStream(
+            null,
+          );
+
+          localScreenStreamRef.current =
+            null;
+
+          setScreenSharing(
+            false,
+          );
+
+          setError(
+            caught instanceof Error
+              ? caught.message
+              : 'Não foi possível iniciar a transmissão de tela.',
+          );
+        }
+      },
+      [
+        call.roomId,
+        currentUid,
+        screenSharing,
+        stopScreenShare,
+      ],
+    );
+
   /* =======================================================
      CAMERA
      ======================================================= */
@@ -2262,7 +3328,7 @@ export function CallScreen({
 
             if (!cameraGranted) {
               setError(
-                'Permita o acesso Ã  cÃ¢mera para ligar o vÃ­deo.',
+                'Permita o acesso à câmera para ligar o vídeo.',
               );
 
               return;
@@ -2288,7 +3354,7 @@ export function CallScreen({
               !videoTrack
             ) {
               throw new Error(
-                'Nenhuma cÃ¢mera encontrada.',
+                'Nenhuma câmera encontrada.',
               );
             }
 
@@ -2301,15 +3367,19 @@ export function CallScreen({
               peersRef.current
                 .values()
             ) {
-              await bundle
-                .videoSender
-                .replaceTrack(
-                  videoTrack,
-                );
+              if (
+                bundle.videoSender
+              ) {
+                await bundle
+                  .videoSender
+                  .replaceTrack(
+                    videoTrack,
+                  );
+              }
             }
 
             /*
-             * MediaStream ÃƒÂ© mutÃƒÂ¡vel. Criamos uma nova referÃƒÂªncia
+             * MediaStream é mutável. Criamos uma nova referência
              * para o React remontar o RTCView imediatamente.
              */
             const renderedStream =
@@ -2338,7 +3408,7 @@ export function CallScreen({
             setError(
               caught instanceof Error
                 ? caught.message
-                : 'NÃ£o foi possÃ­vel ligar a cÃ¢mera.',
+                : 'Não foi possível ligar a câmera.',
             );
 
             return;
@@ -2455,11 +3525,15 @@ export function CallScreen({
               peersRef.current
                 .values()
             ) {
-              await bundle
-                .audioSender
-                .replaceTrack(
-                  audioTrack,
-                );
+              if (
+                bundle.audioSender
+              ) {
+                await bundle
+                  .audioSender
+                  .replaceTrack(
+                    audioTrack,
+                  );
+              }
             }
           } catch (
             caught
@@ -2467,7 +3541,7 @@ export function CallScreen({
             setError(
               caught instanceof Error
                 ? caught.message
-                : 'NÃ£o foi possÃ­vel acessar o microfone.',
+                : 'Não foi possível acessar o microfone.',
             );
 
             return;
@@ -2697,6 +3771,26 @@ export function CallScreen({
       ],
     );
 
+  const screenParticipants =
+    useMemo(
+      () =>
+        orderedParticipants
+          .filter(
+            participant =>
+              participant.uid ===
+                currentUid
+                ? screenSharing
+                : participant
+                    .screenEnabled ===
+                  true,
+          ),
+      [
+        currentUid,
+        orderedParticipants,
+        screenSharing,
+      ],
+    );
+
   const duration =
     formatDuration(
       (
@@ -2772,7 +3866,7 @@ export function CallScreen({
             1
               ? 'participante'
               : 'participantes'}
-            {' Â· '}
+            {' · '}
             {duration}
           </Text>
 
@@ -2865,6 +3959,92 @@ export function CallScreen({
         }
         contentContainerStyle={
           styles.participants
+        }
+        ListHeaderComponent={
+          screenParticipants.length >
+          0 ? (
+            <View
+              style={
+                styles.screenShareSection
+              }
+            >
+              {screenParticipants.map(
+                participant => {
+                  const mine =
+                    participant.uid ===
+                    currentUid;
+
+                  const stream =
+                    mine
+                      ? localScreenStream
+                      : remoteScreenStreams[
+                          participant
+                            .uid
+                        ];
+
+                  const ready =
+                    !!stream &&
+                    stream
+                      .getVideoTracks()
+                      .length >
+                      0;
+
+                  return (
+                    <View
+                      key={
+                        `screen-${participant.uid}`
+                      }
+                      style={
+                        styles.screenShareCard
+                      }
+                    >
+                      <View
+                        style={
+                          styles.screenShareStage
+                        }
+                      >
+                        {ready &&
+                        stream ? (
+                          <RTCView
+                            streamURL={
+                              stream.toURL()
+                            }
+                            mirror={
+                              false
+                            }
+                            objectFit="contain"
+                            style={
+                              styles.screenShareVideo
+                            }
+                          />
+                        ) : (
+                          <ActivityIndicator
+                            size="small"
+                            color={
+                              colors.blue
+                            }
+                          />
+                        )}
+                      </View>
+
+                      <Text
+                        numberOfLines={
+                          1
+                        }
+                        style={
+                          styles.screenShareName
+                        }
+                      >
+                        {mine
+                          ? 'Sua tela'
+                          : `Tela de ${participant.username}`}
+                      </Text>
+                    </View>
+                  );
+                },
+              )}
+            </View>
+          ) : undefined
         }
         ListEmptyComponent={
           connecting ? (
@@ -3063,7 +4243,7 @@ export function CallScreen({
                           styles.participantChipText
                         }
                       >
-                        MÃ£o levantada
+                        Mão levantada
                       </Text>
                     </>
                   ) : !itemMic ? (
@@ -3097,7 +4277,7 @@ export function CallScreen({
                           styles.participantChipText
                         }
                       >
-                        CÃ¢mera ligada
+                        Câmera ligada
                       </Text>
                     </>
                   ) : (
@@ -3147,7 +4327,7 @@ export function CallScreen({
           }
         >
           <Control
-            label="CÃ¢mera"
+            label="Câmera"
             active={
               camera
             }
@@ -3226,6 +4406,28 @@ export function CallScreen({
                 }
               />
             )}
+          </Control>
+
+
+          <Control
+            label={
+              screenSharing
+                ? 'Parar tela'
+                : 'Tela'
+            }
+            active={
+              screenSharing
+            }
+            onPress={() => {
+              void toggleScreenShare();
+            }}
+          >
+            <Cast
+              size={21}
+              color={
+                colors.text
+              }
+            />
           </Control>
 
           <Control
@@ -3400,6 +4602,59 @@ const styles =
 
     participantColumns: {
       gap: 9,
+    },
+
+    screenShareSection: {
+      marginBottom: 10,
+
+      gap: 10,
+    },
+
+    screenShareCard: {
+      overflow:
+        'hidden',
+
+      minHeight: 230,
+
+      backgroundColor:
+        '#0B121C',
+
+      borderRadius:
+        radii.lg,
+    },
+
+    screenShareStage: {
+      height: 210,
+
+      alignItems:
+        'center',
+
+      justifyContent:
+        'center',
+
+      overflow:
+        'hidden',
+
+      backgroundColor:
+        '#05080D',
+    },
+
+    screenShareVideo: {
+      ...StyleSheet.absoluteFill,
+    },
+
+    screenShareName: {
+      paddingHorizontal: 11,
+
+      paddingVertical: 9,
+
+      color:
+        colors.text,
+
+      fontSize: 10,
+
+      fontWeight:
+        '700',
     },
 
     participantCell: {

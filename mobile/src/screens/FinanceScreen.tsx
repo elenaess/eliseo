@@ -169,7 +169,7 @@ const styles = StyleSheet.create({
     marginTop: 13,
     color: colors.text,
     fontSize: 20,
-    fontWeight: '780',
+    fontWeight: '800',
   },
   heroText: {
     maxWidth: 290,
@@ -247,7 +247,7 @@ const styles = StyleSheet.create({
   saveText: {
     color: colors.white,
     fontSize: 12,
-    fontWeight: '750',
+    fontWeight: '700',
   },
   infoCard: {
     flexDirection: 'row',

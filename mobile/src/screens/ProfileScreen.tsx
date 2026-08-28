@@ -53,6 +53,13 @@ import {
   } from '../components/Avatar';
 
 import {
+  ProfileStatusRow,
+} from '../components/ProfileStatusRow';
+
+import {MusicActivityCard} from '../components/MusicActivityCard';
+import {IntegrationsShortcutRow} from '../components/IntegrationsShortcutRow';
+
+import {
   NativePressable,
   } from '../components/NativePressable';
 
@@ -776,6 +783,11 @@ export function ProfileScreen({
         )}
       </LinearGradient>
 
+      {/* ELISEO_PROFILE_MUSIC_CARD */}
+      <View style={{marginTop: 12}}>
+        <MusicActivityCard activity={profile?.musicActivity} />
+      </View>
+
       {!!error && (
         <Text
           style={
@@ -843,6 +855,13 @@ export function ProfileScreen({
           />
         </View>
       </NativePressable>
+
+      {/* ELISEO_PROFILE_STATUS */}
+      <ProfileStatusRow />
+
+      <IntegrationsShortcutRow
+        onPress={() => navigation.navigate('Integrations')}
+      />
 
       <Text
         style={[

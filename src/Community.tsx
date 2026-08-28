@@ -12,7 +12,6 @@ import type {
 
 import {
   ChevronDown,
-  CircleDollarSign,
   Hash,
   Image,
   MoreHorizontal,
@@ -271,6 +270,26 @@ function CommunityModal({
 }
 
 
+function CommunityPixLogo({
+  size = 22,
+}: {
+  size?: number;
+}) {
+  return (
+    <img
+      src={`${import.meta.env.BASE_URL}pix.svg`}
+      alt=""
+      aria-hidden="true"
+      className="community-pix-brand-logo"
+      style={{
+        width: size,
+        height: size,
+      }}
+    />
+  );
+}
+
+
 function parseCommunityPixAmount(
   value: string
 ): number | null {
@@ -394,7 +413,8 @@ function CommunityPixReadyCard({
   return (
     <div className="community-pix-ready-card community-pix-qr-card">
       <div className="community-pix-qr-copy">
-        <strong>
+        <strong className="community-pix-card-title">
+          <CommunityPixLogo size={21} />
           PIX pronto para pagar
         </strong>
 
@@ -2986,7 +3006,7 @@ function Community({
               setPixError("");
             }}
           >
-            <CircleDollarSign
+            <CommunityPixLogo
               size={22}
             />
           </button>

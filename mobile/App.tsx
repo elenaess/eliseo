@@ -11,8 +11,6 @@ export default function App() {
     <GestureHandlerRootView style={{flex: 1, backgroundColor: colors.bg}}>
       <SafeAreaProvider>
         <StatusBar
-          translucent
-          backgroundColor="transparent"
           barStyle="light-content"
         />
         <RootNavigator />

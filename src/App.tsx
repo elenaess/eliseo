@@ -10,15 +10,11 @@ import {
   Bell,
   BookOpen,
   ChevronDown,
-  CircleDollarSign,
   File,
   FileImage,
   Folder,
   FolderPlus,
-  Gamepad2,
   HardDrive,
-  Hash,
-  Heart,
   HelpCircle,
   Home,
   Image,
@@ -143,7 +139,7 @@ function formatTime(timestamp: any) {
 function EliseoLogo() {
   return (
     <img
-      src="/eliseo.png"
+      src={`${import.meta.env.BASE_URL}eliseo.png`}
       alt="Elíseo"
       className="eliseo-logo-image"
     />
@@ -533,6 +529,28 @@ function UserSidebar({
 }
 
 
+function PixLogo({
+  size = 22,
+  className = "",
+}: {
+  size?: number;
+  className?: string;
+}) {
+  return (
+    <img
+      src={`${import.meta.env.BASE_URL}pix.svg`}
+      alt=""
+      aria-hidden="true"
+      className={`pix-brand-logo ${className}`}
+      style={{
+        width: size,
+        height: size,
+      }}
+    />
+  );
+}
+
+
 /* =========================================================
    HOME
    ========================================================= */
@@ -680,7 +698,7 @@ function HomeView({
             }
           >
             <div className="dash-icon yellow">
-              <CircleDollarSign
+              <PixLogo
                 size={34}
               />
             </div>
@@ -1848,7 +1866,7 @@ function SettingsView({
             }
           >
             <div className="setting-icon">
-              <CircleDollarSign size={25} />
+              <PixLogo size={25} />
             </div>
             <div className="setting-text">
               <strong>
@@ -1975,7 +1993,7 @@ function FinanceView({
           <div className="finance-row">
 
             <div className="finance-icon cyan">
-              ◆
+              <PixLogo size={30} />
             </div>
 
             <div>
@@ -2310,7 +2328,8 @@ function PixReadyCard({
   return (
     <div className="pix-ready-card pix-qr-card">
       <div className="pix-qr-copy">
-        <strong>
+        <strong className="pix-card-title">
+          <PixLogo size={21} />
           PIX pronto para pagar
         </strong>
 
@@ -3305,7 +3324,7 @@ function MessagesView({
                   setPixError("");
                 }}
               >
-                <CircleDollarSign
+                <PixLogo
                   size={22}
                 />
               </button>

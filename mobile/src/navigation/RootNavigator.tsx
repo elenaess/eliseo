@@ -25,6 +25,11 @@ import {
   stopPushListeners,
 } from '../services/push';
 
+import {
+  startMusicPresenceSync,
+  stopMusicPresenceSync,
+} from '../services/music';
+
 import {colors} from '../theme';
 
 import type {
@@ -39,9 +44,13 @@ import {
 
 // TELAS
 import {AppearanceScreen} from '../screens/AppearanceScreen';
+import {BookReaderScreen} from '../screens/BookReaderScreen';
+
 import {CallScreen} from '../screens/CallScreen';
 import {ChatScreen} from '../screens/ChatScreen';
 import {FinanceScreen} from '../screens/FinanceScreen';
+import {IntegrationsScreen} from '../screens/IntegrationsScreen';
+
 import {LoginScreen} from '../screens/LoginScreen';
 import {NotificationsScreen} from '../screens/NotificationsScreen';
 import {ServerScreen} from '../screens/ServerScreen';
@@ -177,6 +186,17 @@ function NavigatorContent({
               name="Settings"
               component={SettingsScreen}
             />
+
+            <Stack.Screen
+              name="Integrations"
+              component={IntegrationsScreen}
+            />
+
+            <Stack.Screen
+              name="BookReader"
+              component={BookReaderScreen}
+              options={{animation: 'slide_from_right'}}
+            />
           </>
         )}
       </Stack.Navigator>
@@ -205,7 +225,10 @@ export function RootNavigator() {
             void startPushForUser(
               user.uid,
             );
+            /* ELISEO_MUSIC_AUTH_SYNC */
+            startMusicPresenceSync(user.uid);
           } else {
+            stopMusicPresenceSync();
             stopPushListeners();
           }
 

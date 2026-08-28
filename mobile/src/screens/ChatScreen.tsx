@@ -52,6 +52,10 @@ import type {
 } from '../components/PixPanel';
 
 import {
+  UserProfileTrigger,
+} from '../components/UserProfileTrigger';
+
+import {
   NativePressable,
 } from '../components/NativePressable';
 
@@ -1003,7 +1007,9 @@ export function ChatScreen({
               ]}
             >
               {!mine && (
-                <Avatar
+                <UserProfileTrigger uid={item.senderId}>
+                  {/* ELISEO_CHAT_PROFILE_TRIGGER */}
+                  <Avatar
                   name={
                     authorName
                   }
@@ -1018,6 +1024,7 @@ export function ChatScreen({
                     32
                   }
                 />
+                </UserProfileTrigger>
               )}
 
               <View

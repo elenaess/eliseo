@@ -1164,3 +1164,26 @@
   height: 21px;
 }
 
+
+
+/* =========================================================
+   LOGO PIX
+   ========================================================= */
+
+.community-pix-brand-logo {
+  display: block;
+  flex: 0 0 auto;
+  object-fit: contain;
+  pointer-events: none;
+}
+
+.community-pix-card-title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.community-composer button .community-pix-brand-logo {
+  width: 22px;
+  height: 22px;
+}

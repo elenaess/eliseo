@@ -37,6 +37,16 @@ export type RootStackParamList = {
   Notifications: undefined;
 
   Settings: undefined;
+
+  Integrations: undefined;
+
+  BookReader: {
+    title: string;
+    bookKey: string;
+    url: string;
+    format: 'pdf' | 'epub';
+    book: import('../services/library').LibraryBook;
+  };
 };
 
 export type MainTabParamList = {

@@ -42,6 +42,9 @@ export type EliseoUser = {
   institutionDomain?: string;
   institutionName?: string;
   institutionTag?: string;
+  status?: 'online' | 'busy' | 'offline';
+  musicProvider?: 'spotify' | 'youtube_music' | 'qobuz' | null;
+  musicActivity?: import('./music').MusicActivity | null;
 };
 
 export async function ensureUserProfile(
@@ -127,6 +130,20 @@ export async function getUserById(
     bio:
       data?.bio ??
       '',
+
+    status:
+      data?.status === 'online' || data?.status === 'busy' || data?.status === 'offline'
+        ? data.status
+        : 'offline',
+
+    musicProvider:
+      data?.musicProvider === 'spotify' || data?.musicProvider === 'youtube_music' || data?.musicProvider === 'qobuz'
+        ? data.musicProvider
+        : null,
+
+    musicActivity:
+      data?.musicActivity ??
+      null,
 
 
     banner:
@@ -216,6 +233,20 @@ export function listenToUserProfile(
         bio:
           data?.bio ??
           '',
+
+    status:
+      data?.status === 'online' || data?.status === 'busy' || data?.status === 'offline'
+        ? data.status
+        : 'offline',
+
+    musicProvider:
+      data?.musicProvider === 'spotify' || data?.musicProvider === 'youtube_music' || data?.musicProvider === 'qobuz'
+        ? data.musicProvider
+        : null,
+
+    musicActivity:
+      data?.musicActivity ??
+      null,
 
 
         banner:
@@ -337,6 +368,20 @@ export async function searchUsers(
           bio:
             data?.bio ??
             '',
+
+    status:
+      data?.status === 'online' || data?.status === 'busy' || data?.status === 'offline'
+        ? data.status
+        : 'offline',
+
+    musicProvider:
+      data?.musicProvider === 'spotify' || data?.musicProvider === 'youtube_music' || data?.musicProvider === 'qobuz'
+        ? data.musicProvider
+        : null,
+
+    musicActivity:
+      data?.musicActivity ??
+      null,
 
 
           banner:
@@ -512,6 +557,24 @@ export async function updateUserBanner(
         bannerUrl,
       updatedAt:
         serverTimestamp(),
+    },
+  );
+}
+
+export async function updateUserStatus(
+  uid: string,
+  status: 'online' | 'busy' | 'offline',
+) {
+  const safe =
+    status === 'online' || status === 'busy' || status === 'offline'
+      ? status
+      : 'offline';
+
+  await updateDoc(
+    doc(db, 'users', uid),
+    {
+      status: safe,
+      updatedAt: serverTimestamp(),
     },
   );
 }

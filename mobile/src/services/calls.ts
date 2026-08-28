@@ -59,6 +59,8 @@ export type EliseoCallParticipant = {
 
   cameraEnabled: boolean;
 
+  screenEnabled: boolean;
+
   handRaised: boolean;
 
   joinedAt?: any;
@@ -334,6 +336,7 @@ export async function joinCallParticipant({
   avatar,
   micEnabled,
   cameraEnabled,
+  screenEnabled = false,
   handRaised = false,
 }: {
   roomId: string;
@@ -349,6 +352,8 @@ export async function joinCallParticipant({
   micEnabled: boolean;
 
   cameraEnabled: boolean;
+
+  screenEnabled?: boolean;
 
   handRaised?: boolean;
 }) {
@@ -370,6 +375,8 @@ export async function joinCallParticipant({
       micEnabled,
 
       cameraEnabled,
+
+      screenEnabled,
 
       handRaised,
 
@@ -395,6 +402,7 @@ export async function updateCallParticipant(
         EliseoCallParticipant,
         | 'micEnabled'
         | 'cameraEnabled'
+        | 'screenEnabled'
         | 'handRaised'
         | 'username'
         | 'avatar'
@@ -506,6 +514,11 @@ export function listenToCallParticipants(
 
                 cameraEnabled:
                   data.cameraEnabled ===
+                  true,
+
+
+                screenEnabled:
+                  data.screenEnabled ===
                   true,
 
                 handRaised:
@@ -734,6 +747,11 @@ export async function leaveCallParticipant({
             cameraEnabled:
               data.cameraEnabled ===
               true,
+
+
+                screenEnabled:
+                  data.screenEnabled ===
+                  true,
 
             handRaised:
               data.handRaised ===

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "205610214409-9j4lnu72ljvgji62r1g172qnkf3q6rma.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.eliseo.app",
+            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
+          }
+        },
+        {
           "client_id": "205610214409-vkrq5fom050gku61rckthdhi3v2k3v5d.apps.googleusercontent.com",
           "client_type": 3
         }

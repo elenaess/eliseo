@@ -267,9 +267,9 @@ function optimizeOpusSdp(
       sdp.replace(
       fmtpRegex,
       (
-        whole,
-        rest: string
-      ) => {
+  _whole,
+  rest: string
+) => {
         const existing =
           rest
             .replace(

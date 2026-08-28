@@ -4,8 +4,14 @@ import {
 
 import {
   createUserWithEmailAndPassword,
+  GithubAuthProvider,
+  GoogleAuthProvider,
+  sendEmailVerification,
   sendPasswordResetEmail,
   signInWithEmailAndPassword,
+  signInWithPopup,
+  signOut,
+  type AuthProvider,
 } from "firebase/auth";
 
 import {
@@ -31,7 +37,7 @@ type LoginProps = {
 function EliseoLoginLogo() {
   return (
     <img
-      src="/eliseo.png"
+      src={`${import.meta.env.BASE_URL}eliseo.png`}
       alt="Elíseo"
       className="el-login-logo-image"
     />
@@ -86,6 +92,20 @@ function Login({
     useState("");
 
 
+  const [
+    info,
+    setInfo,
+  ] =
+    useState("");
+
+
+  const [
+    unverifiedEmail,
+    setUnverifiedEmail,
+  ] =
+    useState(false);
+
+
   function translateError(
     code: string
   ) {
@@ -123,6 +143,30 @@ function Login({
 
     if (
       code.includes(
+        "popup-closed-by-user"
+      )
+    ) {
+      return "A janela de login foi fechada antes de concluir.";
+    }
+
+    if (
+      code.includes(
+        "popup-blocked"
+      )
+    ) {
+      return "O navegador bloqueou a janela de login.";
+    }
+
+    if (
+      code.includes(
+        "account-exists-with-different-credential"
+      )
+    ) {
+      return "Este e-mail já usa outro método de login.";
+    }
+
+    if (
+      code.includes(
         "too-many-requests"
       )
     ) {
@@ -135,7 +179,9 @@ function Login({
 
   async function submit() {
     const cleanEmail =
-      email.trim();
+      email
+        .trim()
+        .toLowerCase();
 
     if (
       !cleanEmail ||
@@ -145,29 +191,240 @@ function Login({
         "Preencha o e-mail e a senha."
       );
 
+      setInfo("");
       return;
     }
 
     try {
       setLoading(true);
       setError("");
+      setInfo("");
+      setUnverifiedEmail(false);
+
+      /* =====================================================
+         CADASTRO
+
+         A verificação é enviada UMA VEZ aqui, logo após
+         a criação da conta.
+         ===================================================== */
 
       if (
         mode ===
         "register"
       ) {
-        await createUserWithEmailAndPassword(
-          auth,
-          cleanEmail,
-          password
+        const credential =
+          await createUserWithEmailAndPassword(
+            auth,
+            cleanEmail,
+            password
+          );
+
+        await sendEmailVerification(
+          credential.user
         );
-      } else {
+
+        await signOut(
+          auth
+        );
+
+        setMode(
+          "login"
+        );
+
+        setPassword(
+          ""
+        );
+
+        setInfo(
+          "Conta criada. Confirme seu e-mail pelo link enviado pelo Firebase e depois entre normalmente."
+        );
+
+        return;
+      }
+
+
+      /* =====================================================
+         LOGIN
+
+         Aqui NÃO enviamos outro e-mail.
+         Só verificamos o status salvo pelo Firebase.
+
+         Se emailVerified === true, entra direto.
+         ===================================================== */
+
+      const credential =
         await signInWithEmailAndPassword(
           auth,
           cleanEmail,
           password
         );
+
+      await credential.user.reload();
+
+      const currentUser =
+        auth.currentUser;
+
+      if (
+        !currentUser
+      ) {
+        throw new Error(
+          "Não foi possível carregar sua conta."
+        );
       }
+
+      if (
+        !currentUser.emailVerified
+      ) {
+        await signOut(
+          auth
+        );
+
+        setUnverifiedEmail(
+          true
+        );
+
+        setInfo(
+          "Seu e-mail ainda não foi confirmado. Abra o link que o Firebase enviou e depois clique em Entrar novamente."
+        );
+
+        return;
+      }
+
+      // Já confirmou uma vez?
+      // Entra direto daqui em diante.
+      onLogin?.();
+    } catch (
+      caught
+    ) {
+      if (
+        caught instanceof Error &&
+        !("code" in caught)
+      ) {
+        setError(
+          caught.message
+        );
+        return;
+      }
+
+      const firebaseError =
+        caught as {
+          code?: string;
+        };
+
+      setError(
+        translateError(
+          firebaseError.code ||
+            ""
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  /* =========================================================
+     REENVIO MANUAL
+
+     Só aparece se a pessoa tentou entrar e ainda não confirmou.
+     Não acontece automaticamente em todos os logins.
+     ========================================================= */
+
+  async function resendVerification() {
+    const cleanEmail =
+      email
+        .trim()
+        .toLowerCase();
+
+    if (
+      !cleanEmail ||
+      !password
+    ) {
+      setError(
+        "Digite seu e-mail e senha para reenviar a confirmação."
+      );
+
+      setInfo("");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      setError("");
+      setInfo("");
+
+      const credential =
+        await signInWithEmailAndPassword(
+          auth,
+          cleanEmail,
+          password
+        );
+
+      await credential.user.reload();
+
+      if (
+        credential.user.emailVerified
+      ) {
+        await signOut(
+          auth
+        );
+
+        setUnverifiedEmail(
+          false
+        );
+
+        setInfo(
+          "Seu e-mail já está confirmado. Clique em Entrar."
+        );
+
+        return;
+      }
+
+      await sendEmailVerification(
+        credential.user
+      );
+
+      await signOut(
+        auth
+      );
+
+      setInfo(
+        "Enviamos um novo link de confirmação para seu e-mail."
+      );
+    } catch (
+      caught
+    ) {
+      const firebaseError =
+        caught as {
+          code?: string;
+        };
+
+      setError(
+        translateError(
+          firebaseError.code ||
+            ""
+        )
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+
+  async function socialLogin(
+    provider:
+      AuthProvider
+  ) {
+    try {
+      setLoading(true);
+      setError("");
+      setInfo("");
+      setUnverifiedEmail(false);
+
+      await signInWithPopup(
+        auth,
+        provider
+      );
 
       onLogin?.();
     } catch (
@@ -190,6 +447,35 @@ function Login({
   }
 
 
+  async function googleLogin() {
+    const provider =
+      new GoogleAuthProvider();
+
+    provider.setCustomParameters({
+      prompt:
+        "select_account",
+    });
+
+    await socialLogin(
+      provider
+    );
+  }
+
+
+  async function githubLogin() {
+    const provider =
+      new GithubAuthProvider();
+
+    provider.addScope(
+      "user:email"
+    );
+
+    await socialLogin(
+      provider
+    );
+  }
+
+
   async function resetPassword() {
     if (
       !email.trim()
@@ -198,16 +484,20 @@ function Login({
         "Digite seu e-mail primeiro."
       );
 
+      setInfo("");
       return;
     }
 
     try {
+      setError("");
+      setInfo("");
+
       await sendPasswordResetEmail(
         auth,
         email.trim()
       );
 
-      setError(
+      setInfo(
         "Enviamos um link de recuperação para seu e-mail."
       );
     } catch {
@@ -347,6 +637,23 @@ function Login({
           )}
 
 
+          {info && (
+            <div
+              className="el-login-error"
+              style={{
+                background:
+                  "rgba(31, 82, 110, 0.35)",
+                borderColor:
+                  "rgba(84, 180, 230, 0.2)",
+                color:
+                  "#a9dcff",
+              }}
+            >
+              {info}
+            </div>
+          )}
+
+
           <button
             className="el-login-submit"
             onClick={
@@ -357,7 +664,7 @@ function Login({
             }
           >
             {loading
-              ? "Entrando..."
+              ? "Aguarde..."
               : mode ===
                   "login"
                 ? "Entrar"
@@ -367,17 +674,32 @@ function Login({
 
           {mode ===
             "login" && (
+            <>
+              {unverifiedEmail && (
+                <button
+                  className="el-login-forgot"
+                  type="button"
+                  onClick={
+                    resendVerification
+                  }
+                  disabled={
+                    loading
+                  }
+                >
+                  Reenviar confirmação de e-mail
+                </button>
+              )}
 
-            <button
-              className="el-login-forgot"
-              type="button"
-              onClick={
-                resetPassword
-              }
-            >
-              Esqueci minha senha
-            </button>
-
+              <button
+                className="el-login-forgot"
+                type="button"
+                onClick={
+                  resetPassword
+                }
+              >
+                Esqueci minha senha
+              </button>
+            </>
           )}
 
         </div>
@@ -400,37 +722,41 @@ function Login({
 
           <button
             className="google"
-            title="Google — integração em breve"
+            title="Continuar com Google"
+            type="button"
+            onClick={
+              googleLogin
+            }
+            disabled={
+              loading
+            }
           >
-            G
+            <img
+              src={`${import.meta.env.BASE_URL}google.svg`}
+              alt=""
+              aria-hidden="true"
+              className="el-login-social-logo google-logo"
+            />
           </button>
 
 
           <button
-            className="discord"
-            title="Discord — integração em breve"
+            className="github"
+            title="Continuar com GitHub"
+            type="button"
+            onClick={
+              githubLogin
+            }
+            disabled={
+              loading
+            }
           >
-            <span>
-              ◉
-            </span>
-          </button>
-
-
-          <button
-  className="github"
-  title="GitHub — integração em breve"
->
-  <span className="github-css-logo">
-    GH
-  </span>
-</button>
-
-
-          <button
-            className="roblox"
-            title="Roblox — integração em breve"
-          >
-            <i />
+            <img
+              src={`${import.meta.env.BASE_URL}github.svg`}
+              alt=""
+              aria-hidden="true"
+              className="el-login-social-logo github-logo"
+            />
           </button>
 
         </div>
@@ -447,7 +773,17 @@ function Login({
                 : "login"
             );
 
-            setError("");
+            setError(
+              ""
+            );
+
+            setInfo(
+              ""
+            );
+
+            setUnverifiedEmail(
+              false
+            );
           }}
         >
           {mode ===

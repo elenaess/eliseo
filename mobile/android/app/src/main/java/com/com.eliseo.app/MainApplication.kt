@@ -17,6 +17,7 @@ class MainApplication : Application(), ReactApplication {
       context = applicationContext,
       packageList =
         PackageList(this).packages.apply {
+        add(EliseoMediaSessionPackage())
           // Packages that cannot be autolinked yet can be added manually here, for example:
           // add(MyReactNativePackage())
         },
@@ -24,6 +25,8 @@ class MainApplication : Application(), ReactApplication {
   }
 
   override fun onCreate() {
+        val options = WebRTCModuleOptions.getInstance()
+        options.enableMediaProjectionService = true
     super.onCreate()
 
     /*

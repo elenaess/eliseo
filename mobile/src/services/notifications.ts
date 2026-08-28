@@ -44,11 +44,20 @@ type LatestChannelMessage = {
 function timestampValue(
   timestamp: any,
 ) {
-  return (
-    timestamp?.toMillis?.() ??
-    timestamp?.seconds * 1000 ??
-    0
-  );
+  const millis =
+    timestamp?.toMillis?.();
+
+  if (
+    typeof millis ===
+    'number'
+  ) {
+    return millis;
+  }
+
+  return typeof timestamp?.seconds ===
+    'number'
+    ? timestamp.seconds * 1000
+    : 0;
 }
 
 function serverReadKey(

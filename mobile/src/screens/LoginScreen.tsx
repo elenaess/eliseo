@@ -260,7 +260,7 @@ export function LoginScreen() {
 
       if (!idToken) {
         throw new Error(
-          'O Google nÃ£o retornou o token de autenticaÃ§Ã£o.',
+          'O Google não retornou o token de autenticação.',
         );
       }
 
@@ -305,7 +305,7 @@ export function LoginScreen() {
         code === '10'
       ) {
         setError(
-          'Login Google nÃ£o configurado para este APK. Verifique o SHA-1 no Firebase.',
+          'Login Google não configurado para este APK. Verifique o SHA-1 no Firebase.',
         );
 
         return;
@@ -315,7 +315,7 @@ export function LoginScreen() {
         caught instanceof Error &&
         caught.message
           ? caught.message
-          : 'NÃ£o foi possÃ­vel entrar com Google.',
+          : 'Não foi possível entrar com Google.',
       );
     } finally {
       setLoading(false);
@@ -615,21 +615,14 @@ export function LoginScreen() {
                 styles.social
               }
             >
-              <Image
-                source={
-                  require(
-                    '../assets/google-g.png',
-                  )
-                }
-                resizeMode="contain"
-                style={{
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#FFFFFF',
-    alignSelf: 'center',
-  }}
-              />
+              {/* ELISEO_GOOGLE_BADGE_V2 */}
+              <View style={styles.googleLogoBadge}>
+                <Image
+                  source={require('../assets/google-g.png')}
+                  resizeMode="contain"
+                  style={styles.googleLogoMark}
+                />
+              </View>
             </NativePressable>
           </View>
 
@@ -991,4 +984,20 @@ const styles =
       fontSize:
         11,
     },
-  });
+
+    googleLogoBadge: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      alignItems: 'center',
+      justifyContent: 'center',
+      backgroundColor: '#FFFFFF',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: 'rgba(11,18,28,0.24)',
+    },
+
+    googleLogoMark: {
+      width: 25,
+      height: 25,
+    },
+});

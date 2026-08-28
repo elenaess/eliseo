@@ -307,6 +307,6 @@ const styles =
     label: {
       fontSize: 9,
       fontWeight:
-        '650',
+        '600',
     },
   });

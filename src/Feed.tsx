@@ -635,7 +635,6 @@ function Feed({
   user,
   profile,
   onMessageUser: _onMessageUser,
-  onNavigate,
 }: FeedProps) {
   const [
     posts,
