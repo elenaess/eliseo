@@ -1,0 +1,37 @@
+<!doctype html>
+<!-- ELISEO_PATCH5_CORRECTIVE_POST_404 -->
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Abrir publicação — Elíseo</title>
+  <style>
+    html,body{height:100%;margin:0;background:#07101b;color:#e9f1fb;font-family:system-ui,-apple-system,Segoe UI,sans-serif}
+    main{min-height:100%;display:grid;place-items:center;padding:24px;box-sizing:border-box}
+    section{width:min(420px,100%);text-align:center;background:#0d1725;border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:26px;box-sizing:border-box}
+    h1{font-size:20px;margin:0 0 10px}p{color:#9eabb9;font-size:14px;line-height:1.5}
+    a{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:0 18px;margin-top:12px;border-radius:13px;background:#2f8fe8;color:white;text-decoration:none;font-weight:700}
+  </style>
+</head>
+<body>
+<main><section>
+  <h1>Publicação do Elíseo</h1>
+  <p id="status">Tentando abrir no aplicativo…</p>
+  <a id="open" href="https://eliseo.live/">Ir para o Elíseo</a>
+</section></main>
+<script>
+(function(){
+  var match=location.pathname.match(/^\/post\/([^/?#]+)\/?$/i);
+  if(!match){ location.replace('/'); return; }
+  var id=decodeURIComponent(match[1]);
+  var scheme='eliseo://post/'+encodeURIComponent(id);
+  var button=document.getElementById('open');
+  var status=document.getElementById('status');
+  button.href=scheme;
+  button.textContent='Abrir no aplicativo';
+  status.textContent='Se o Elíseo estiver instalado, esta publicação abre diretamente no app.';
+  setTimeout(function(){ location.href=scheme; },80);
+})();
+</script>
+</body>
+</html>
