@@ -1,0 +1,14 @@
+[
+    {
+        "target":  {
+                       "sha256_cert_fingerprints":  [
+                                                        "68:5D:64:49:41:EB:06:4D:C8:5B:CE:A1:0D:57:C6:84:D6:A7:B9:84:A8:EC:E3:88:4F:A8:97:36:52:32:3D:D8"
+                                                    ],
+                       "namespace":  "android_app",
+                       "package_name":  "com.eliseo.app"
+                   },
+        "relation":  [
+                         "delegate_permission/common.handle_all_urls"
+                     ]
+    }
+]
