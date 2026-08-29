@@ -27,6 +27,8 @@ import Animated,
   FadeInDown,
   } from 'react-native-reanimated';
 
+import {useNavigation} from '@react-navigation/native';
+
 import {
   useSafeAreaInsets,
   } from 'react-native-safe-area-context';
@@ -66,6 +68,9 @@ GoogleSignin.configure({
 export function LoginScreen() {
   const insets =
     useSafeAreaInsets();
+
+  const navigation =
+    useNavigation<any>();
 
   const [
     register,
@@ -127,7 +132,7 @@ export function LoginScreen() {
         'weak-password',
       )
     ) {
-      return 'Use uma senha com pelo menos 6 caracteres.';
+      return 'Use uma senha com pelo menos 10 caracteres.';
     }
 
     if (
@@ -182,24 +187,34 @@ export function LoginScreen() {
       return;
     }
 
+    if (
+      register &&
+      password.length < 10
+    ) {
+      setError(
+        'Use uma senha com pelo menos 10 caracteres.',
+      );
+
+      return;
+    }
+
     try {
       setLoading(true);
 
       setError('');
 
       if (register) {
-        const credential =
-          await createUserWithEmailAndPassword(
+        await createUserWithEmailAndPassword(
             auth,
             cleanEmail,
             password,
           );
 
-        await ensureUserProfile(
-          credential.user.uid,
-          credential.user.email ??
-            cleanEmail,
-        );
+        /*
+         * O perfil só é criado depois do OTP.
+         * RootNavigator mantém contas email/senha
+         * não verificadas presas em VerifyEmail.
+         */
       } else {
         const credential =
           await signInWithEmailAndPassword(
@@ -539,6 +554,24 @@ export function LoginScreen() {
             </NativePressable>
           </View>
 
+          {!register && (
+            <NativePressable
+              disabled={loading}
+              onPress={() => {
+                navigation.navigate(
+                  'PasswordReset',
+                );
+              }}
+              style={styles.forgot}
+            >
+              <View style={styles.forgotInner}>
+                <Text style={styles.forgotText}>
+                  Esqueci minha senha
+                </Text>
+              </View>
+            </NativePressable>
+          )}
+
           {!!error && (
             <Text
               style={
@@ -616,6 +649,7 @@ export function LoginScreen() {
               }
             >
               {/* ELISEO_GOOGLE_BADGE_V2 */}
+              <View style={styles.googleBadgeCenter}>
               <View style={styles.googleLogoBadge}>
                 <Image
                   source={require('../assets/google-g.png')}
@@ -623,6 +657,7 @@ export function LoginScreen() {
                   style={styles.googleLogoMark}
                 />
               </View>
+            </View>
             </NativePressable>
           </View>
 
@@ -666,6 +701,12 @@ export function LoginScreen() {
 
 const styles =
   StyleSheet.create({
+    // ELISEO_PATCH2_GOOGLE_BADGE
+    googleBadgeCenter: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     root: {
       flex: 1,
       overflow: 'hidden',
@@ -826,6 +867,24 @@ const styles =
         'center',
     },
 
+    forgot: {
+      height: 36,
+      alignSelf: 'flex-end',
+      marginTop: 4,
+    },
+
+    forgotInner: {
+      flex: 1,
+      alignItems: 'flex-end',
+      justifyContent: 'center',
+    },
+
+    forgotText: {
+      color: colors.textSoft,
+      fontSize: 10.5,
+      fontWeight: '600',
+    },
+
     error: {
       marginTop:
         12,
@@ -904,6 +963,8 @@ const styles =
     social: {
       width: 54,
       height: 54,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
 
     socialInner: {

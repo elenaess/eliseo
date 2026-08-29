@@ -103,6 +103,11 @@ import {
 } from '../services/push';
 
 import {
+  playCallJoinSound,
+  playCallLeaveSound,
+} from '../services/callSounds';
+
+import {
   colors,
   radii,
   spacing,
@@ -948,6 +953,14 @@ export function CallScreen({
     useRef<
       EliseoCallParticipant[]
     >([]);
+
+  const remoteSoundSessionsRef =
+    useRef<Set<string>>(
+      new Set(),
+    ); // ELISEO_PATCH2_SESSION_PRESENCE
+
+  const remoteSoundSnapshotReadyRef =
+    useRef(false);
 
   const sessionIdRef =
     useRef('');
@@ -2647,6 +2660,56 @@ export function CallScreen({
             call.roomId,
 
             incoming => {
+              const nextRemoteSessions =
+                new Set(
+                  incoming
+                    .filter(
+                      participant =>
+                        participant.uid !==
+                        userUid,
+                    )
+                    .map(
+                      participant =>
+                        `${participant.uid}:${participant.sessionId || "legacy"}`,
+                    ),
+                );
+
+              if (
+                remoteSoundSnapshotReadyRef
+                  .current
+              ) {
+                for (
+                  const remoteSession of
+                  nextRemoteSessions
+                ) {
+                  if (
+                    !remoteSoundSessionsRef
+                      .current
+                      .has(remoteSession)
+                  ) {
+                    playCallJoinSound();
+                  }
+                }
+
+                for (
+                  const remoteSession of
+                  remoteSoundSessionsRef.current
+                ) {
+                  if (
+                    !nextRemoteSessions
+                      .has(remoteSession)
+                  ) {
+                    playCallLeaveSound();
+                  }
+                }
+              } else {
+                remoteSoundSnapshotReadyRef
+                  .current = true;
+              }
+
+              remoteSoundSessionsRef.current =
+                nextRemoteSessions;
+
               setParticipants(
                 incoming,
               );

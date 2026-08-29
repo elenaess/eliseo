@@ -1,6 +1,14 @@
 export type RootStackParamList = {
   Login: undefined;
 
+  VerifyEmail: undefined;
+
+  PasswordReset:
+    | {
+        authenticated?: boolean;
+      }
+    | undefined;
+
   Main: undefined;
 
   Server: {

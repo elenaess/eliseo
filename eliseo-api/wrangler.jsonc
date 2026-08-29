@@ -1,0 +1,25 @@
+/**
+ * Configuração do Worker do Elíseo
+ */
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+
+  "name": "eliseo-api",
+
+  "main": "src/index.ts",
+
+  "compatibility_date": "2026-08-20",
+
+  "observability": {
+    "enabled": true
+  },
+
+  "upload_source_maps": true,
+
+  "r2_buckets": [
+    {
+      "binding": "ELISEO_DRIVE",
+      "bucket_name": "eliseo-drive"
+    }
+  ]
+}

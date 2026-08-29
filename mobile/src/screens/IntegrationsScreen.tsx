@@ -50,7 +50,7 @@ export function IntegrationsScreen({navigation}:Props){
     try{
       setBusy(true);setMessage('');
       if(next==='spotify'){
-        if(!spotifyConfigured()) throw new Error('Configure o Client ID do Spotify no Patch 3B.');
+        if(!spotifyConfigured()) throw new Error('O Client ID do Spotify ainda nao foi configurado.');
         await beginSpotifyAuthorization();
         return;
       }

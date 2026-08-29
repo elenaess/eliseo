@@ -1,3 +1,5 @@
+import {auth} from './firebase';
+
 const API_URL =
   'https://eliseo-api.eliseeo.workers.dev';
 
@@ -71,6 +73,10 @@ async function uploadAttempt(
       {
         method:
           'POST',
+        headers: {
+          Authorization:
+            `Bearer ${await auth.currentUser?.getIdToken() ?? ''}`,
+        },
         body:
           formData,
       },
@@ -168,46 +174,24 @@ function allowedDriveUploadFile(
   const name = (file.name || '').toLowerCase();
   const type = (file.type || '').toLowerCase();
   const ext = name.includes('.') ? name.split('.').pop() || '' : '';
-  const allowed = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm'];
-  return allowed.includes(ext) || type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html';
+  const allowed = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm','doc','docx','xls','xlsx','csv','txt','md','zip'];
+  return allowed.includes(ext) || type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html' || type === 'application/msword' || type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || type === 'application/vnd.ms-excel' || type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || type === 'text/csv' || type === 'text/plain' || type === 'text/markdown' || type === 'application/zip' || type === 'application/x-zip-compressed';
 }
 
 export async function uploadDriveFile(
   uid: string,
   file: EliseoUploadFile,
 ) {
-  /* ELISEO_DRIVE_TYPE_GUARD */
+  // ELISEO_PATCH2_DRIVE_CATEGORY: falhas do Worker devem aparecer como falhas do Drive.
   if (!allowedDriveUploadFile(file)) {
     throw new Error('Tipo de arquivo não permitido no Drive.');
   }
-  try {
-    return await uploadAttempt(
-      uid,
-      file,
-      'drive',
-    );
-  } catch (caught) {
-    const status =
-      (
-        caught as {
-          status?: number;
-        }
-      )?.status;
 
-    if (
-      status !== 400 &&
-      status !== 404 &&
-      status !== 422
-    ) {
-      throw caught;
-    }
-
-    return uploadAttempt(
-      uid,
-      file,
-      'post',
-    );
-  }
+  return uploadAttempt(
+    uid,
+    file,
+    'drive',
+  );
 }
 
 export function getFileUrl(
@@ -237,6 +221,8 @@ export async function deleteStoredFile(
         headers: {
           'Content-Type':
             'application/json',
+          Authorization:
+            `Bearer ${await auth.currentUser?.getIdToken() ?? ''}`,
         },
         body:
           JSON.stringify({

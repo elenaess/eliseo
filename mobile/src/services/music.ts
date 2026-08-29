@@ -1,3 +1,4 @@
+// ELISEO_PATCH2_SPOTIFY_PKCE
 import 'react-native-get-random-values';
 import {Linking, NativeModules} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';

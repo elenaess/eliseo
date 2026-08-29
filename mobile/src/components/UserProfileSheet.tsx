@@ -1,3 +1,4 @@
+// ELISEO_PATCH2_PROFILE_MOTION: movimento curto, sem spring/zoom explosivo.
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   Image,
@@ -57,7 +58,7 @@ export function UserProfileSheet({
           <View style={StyleSheet.absoluteFill} />
         </NativePressable>
 
-        <Animated.View entering={SlideInDown.springify().damping(18)} exiting={SlideOutDown.duration(170)} style={styles.sheet}>
+        <Animated.View entering={SlideInDown.duration(240)} exiting={SlideOutDown.duration(170)} style={styles.sheet}>
           <View style={styles.handle} />
 
           <View style={styles.bannerWrap}>

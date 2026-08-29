@@ -27,10 +27,6 @@ import {
 } from 'lucide-react-native';
 
 import {
-  sendPasswordResetEmail,
-} from '@react-native-firebase/auth';
-
-import {
   useSafeAreaInsets,
 } from 'react-native-safe-area-context';
 
@@ -168,35 +164,6 @@ export function SettingsScreen({
     }
   }
 
-  async function resetPassword() {
-    if (!email || saving) {
-      return;
-    }
-
-    try {
-      setSaving(true);
-      setError('');
-      setMessage('');
-
-      await sendPasswordResetEmail(
-        auth,
-        email,
-      );
-
-      setMessage(
-        'Enviamos um link para redefinir sua senha.',
-      );
-    } catch (caught) {
-      setError(
-        caught instanceof Error
-          ? caught.message
-          : 'Não foi possível enviar o e-mail de recuperação.',
-      );
-    } finally {
-      setSaving(false);
-    }
-  }
-
   return (
     <ScrollView
       style={[
@@ -311,11 +278,14 @@ export function SettingsScreen({
         <ActionRow
           palette={palette}
           icon="password"
-          title="Redefinir senha"
-          description="Receba um link de recuperação no seu e-mail."
+          title="Alterar senha"
+          description="Confirme um código enviado ao seu e-mail."
           disabled={saving || !email}
           onPress={() => {
-            void resetPassword();
+            navigation.navigate(
+              'PasswordReset',
+              {authenticated: true},
+            );
           }}
         />
 

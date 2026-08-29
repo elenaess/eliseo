@@ -108,10 +108,10 @@ export function isAllowedDriveUpload(
 ) {
   const lowerName = name.toLowerCase();
   const type = (contentType || '').toLowerCase();
-  const allowedExtensions = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm'];
+  const allowedExtensions = ['gif','jpg','jpeg','png','webp','pdf','mp4','webm','mov','m4v','ppt','pptx','html','htm','doc','docx','xls','xlsx','csv','txt','md','zip'];
   const ext = lowerName.includes('.') ? lowerName.split('.').pop() || '' : '';
   if (allowedExtensions.includes(ext)) return true;
-  return type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html';
+  return type.startsWith('image/') || type.startsWith('video/') || type === 'application/pdf' || type === 'application/vnd.ms-powerpoint' || type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' || type === 'text/html' || type === 'application/msword' || type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' || type === 'application/vnd.ms-excel' || type === 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' || type === 'text/csv' || type === 'text/plain' || type === 'text/markdown' || type === 'application/zip' || type === 'application/x-zip-compressed';
 }
 
 export function listenToDriveFavorites(uid: string, callback: (ids: string[]) => void) {

@@ -1,0 +1,12 @@
+name = "eliseo-auth"
+main = "src/index.mjs"
+compatibility_date = "2026-08-28"
+
+# Copie wrangler.example.toml para wrangler.toml e preencha o ID do KV.
+[[kv_namespaces]]
+binding = "AUTH_KV"
+id = "COLE_O_ID_DO_KV_AQUI"
+
+[vars]
+FIREBASE_PROJECT_ID = "eliseeo"
+EMAIL_FROM = "Elíseo <verification@eliseo.live>"
