@@ -5,17 +5,10 @@ import {
   useState,
 } from "react";
 
-import {
-  ArrowLeft,
-  Bell,
+import {  Bell,
   BookOpen,
   ChevronDown,
-  File,
-  FileImage,
-  Folder,
-  FolderPlus,
-  HardDrive,
-  HelpCircle,
+  File,  Folder,  HelpCircle,
   Home,
   Image,
   Menu,
@@ -26,9 +19,7 @@ import {
   Plus,
   Search,
   Send,
-  Settings,
-  Upload,
-  User,
+  Settings,  User,
   Users,
   Video,
   VolumeX,
@@ -50,6 +41,16 @@ import Community from "./Community";
 import CallRoom, {
   type EliseoCallDescriptor,
 } from "./CallRoom";
+/* ELISEO_DESKTOP_PARITY_V1 */
+import { DesktopRuntimeBridge } from "./desktop/DesktopRuntimeBridge";
+import { DesktopDriveView } from "./desktop/DesktopDriveView";
+import { DesktopProfileView } from "./desktop/DesktopProfileView";
+import { DesktopSettingsView } from "./desktop/DesktopSettingsView";
+import { DesktopAppearanceView } from "./desktop/DesktopAppearanceView";
+import { DesktopNotificationsView } from "./desktop/DesktopNotificationsView";
+import { DesktopIntegrationsView } from "./desktop/DesktopIntegrationsView";
+import { DesktopLibraryView } from "./desktop/DesktopLibraryView";
+
 
 import { QRCodeSVG } from "qrcode.react";
 import { buildPixPayload } from "./pix";
@@ -73,32 +74,19 @@ import {
   respondToPixRequest,
   markPixPaymentReported,
   confirmPixPaymentReceived,
-  saveMyPixKey,
-  createDriveFolder,
-  createDriveFileRecord,
-  listenToDriveFiles,
-  listenToDriveFolders,
-  listenToDriveUsage,
-  releaseDriveBytes,
-  reserveDriveBytes,
-  ELISEO_DRIVE_LIMIT_BYTES,
-  type EliseoDriveFile,
-  type EliseoDriveFolder,
-  type ConversationListItem,
+  saveMyPixKey,  type ConversationListItem,
   type EliseoPixAction,
   type EliseoPixRequest,
   type EliseoUser,
   type FirestoreMessage,
 } from "./firestore";
 
-import {
-  deleteStoredFile,
-  uploadDriveFile,
-  uploadGif,
+import {  uploadGif,
   uploadPostImage,
 } from "./storage";
 
 import "./App.css";
+import "./desktop/desktop.css";
 
 
 type Page =
@@ -111,6 +99,9 @@ type Page =
   | "settings"
   | "customize"
   | "finance"
+  | "notifications"
+  | "integrations"
+  | "library"
   | "call";
 
 
@@ -312,7 +303,7 @@ function TopBar({
         <HelpCircle size={23} />
       </button>
 
-      <button className="top-action notification">
+      <button className="top-action notification" onClick={() => setPage("notifications")} title="Notificações">
         <Bell size={23} />
         <span />
       </button>
@@ -500,7 +491,32 @@ function UserSidebar({
         </button>
 
 
+        
         <button
+          className={page === "notifications" ? "active" : ""}
+          onClick={() => setPage("notifications")}
+        >
+          <Bell size={23} />
+          <span>Notificações</span>
+        </button>
+
+        <button
+          className={page === "integrations" ? "active" : ""}
+          onClick={() => setPage("integrations")}
+        >
+          <Settings size={23} />
+          <span>Integrações</span>
+        </button>
+
+        <button
+          className={page === "library" ? "active" : ""}
+          onClick={() => setPage("library")}
+        >
+          <BookOpen size={23} />
+          <span>Biblioteca</span>
+        </button>
+
+<button
           className={
             page === "settings"
               ? "active"
@@ -713,8 +729,7 @@ function HomeView({
           </button>
 
 
-          <button>
-            <div className="dash-icon cyan">
+          <button onClick={() => setPage("integrations")}><div className="dash-icon cyan">
               <Settings
                 size={34}
               />
@@ -733,1172 +748,6 @@ function HomeView({
 
       </main>
 
-    </div>
-  );
-}
-
-
-/* =========================================================
-   DRIVE
-   ========================================================= */
-
-function formatDriveBytes(
-  bytes: number
-) {
-  if (bytes <= 0) {
-    return "0 B";
-  }
-
-  const units = [
-    "B",
-    "KB",
-    "MB",
-    "GB",
-  ];
-
-  const index = Math.min(
-    Math.floor(
-      Math.log(bytes) /
-        Math.log(1024)
-    ),
-    units.length - 1
-  );
-
-  const value =
-    bytes /
-    Math.pow(1024, index);
-
-  return `${value.toFixed(
-    index >= 3 ? 2 : 1
-  )} ${units[index]}`;
-}
-
-function driveFileType(
-  file: EliseoDriveFile
-) {
-  const contentType =
-    file.contentType || "";
-
-  const extension =
-    file.name
-      .split(".")
-      .pop()
-      ?.toLowerCase() || "";
-
-  if (
-    contentType.startsWith(
-      "image/"
-    )
-  ) {
-    return "image";
-  }
-
-  if (extension === "pdf") {
-    return "pdf";
-  }
-
-  if (
-    ["xlsx", "xls", "csv"]
-      .includes(extension)
-  ) {
-    return "sheet";
-  }
-
-  if (
-    ["ppt", "pptx"]
-      .includes(extension)
-  ) {
-    return "presentation";
-  }
-
-  if (
-    ["doc", "docx", "txt", "odt"]
-      .includes(extension)
-  ) {
-    return "word";
-  }
-
-  if (
-    ["js", "ts", "tsx", "jsx", "py", "java", "c", "cpp", "html", "css", "json"]
-      .includes(extension)
-  ) {
-    return "code";
-  }
-
-  return "generic";
-}
-
-function DriveView({
-  user,
-  profile,
-  setPage,
-}: {
-  user:
-    NonNullable<
-      typeof auth.currentUser
-    >;
-
-  profile:
-    EliseoUser | null;
-
-  setPage:
-    (page: Page) => void;
-}) {
-  const [folders, setFolders] =
-    useState<EliseoDriveFolder[]>([]);
-
-  const [files, setFiles] =
-    useState<EliseoDriveFile[]>([]);
-
-  const [usedBytes, setUsedBytes] =
-    useState(0);
-
-  const [currentFolderId, setCurrentFolderId] =
-    useState<string | null>(null);
-
-  const [searchText, setSearchText] =
-    useState("");
-
-  const [newFolderOpen, setNewFolderOpen] =
-    useState(false);
-
-  const [newFolderName, setNewFolderName] =
-    useState("");
-
-  const [driveBusy, setDriveBusy] =
-    useState(false);
-
-  const [driveError, setDriveError] =
-    useState("");
-
-  const fileInputRef =
-    useRef<HTMLInputElement | null>(
-      null
-    );
-
-  useEffect(() => {
-    const stopFolders =
-      listenToDriveFolders(
-        user.uid,
-        setFolders
-      );
-
-    const stopFiles =
-      listenToDriveFiles(
-        user.uid,
-        setFiles
-      );
-
-    const stopUsage =
-      listenToDriveUsage(
-        user.uid,
-        setUsedBytes
-      );
-
-    return () => {
-      stopFolders();
-      stopFiles();
-      stopUsage();
-    };
-  }, [user.uid]);
-
-  const currentFolder =
-    currentFolderId
-      ? folders.find(
-          (folder) =>
-            folder.id ===
-            currentFolderId
-        ) || null
-      : null;
-
-  const visibleFolders =
-    folders.filter(
-      (folder) =>
-        folder.parentId ===
-          currentFolderId &&
-        folder.name
-          .toLowerCase()
-          .includes(
-            searchText
-              .trim()
-              .toLowerCase()
-          )
-    );
-
-  const visibleFiles =
-    files.filter(
-      (file) =>
-        file.folderId ===
-          currentFolderId &&
-        file.name
-          .toLowerCase()
-          .includes(
-            searchText
-              .trim()
-              .toLowerCase()
-          )
-    );
-
-  const usagePercent =
-    Math.min(
-      100,
-      (usedBytes /
-        ELISEO_DRIVE_LIMIT_BYTES) *
-        100
-    );
-
-  function goUpFolder() {
-    if (!currentFolder) {
-      return;
-    }
-
-    setCurrentFolderId(
-      currentFolder.parentId
-    );
-  }
-
-  async function handleCreateFolder() {
-    const cleanName =
-      newFolderName.trim();
-
-    if (!cleanName) {
-      setDriveError(
-        "Digite um nome para a pasta."
-      );
-      return;
-    }
-
-    try {
-      setDriveBusy(true);
-      setDriveError("");
-
-      await createDriveFolder(
-        user.uid,
-        cleanName,
-        currentFolderId
-      );
-
-      setNewFolderName("");
-      setNewFolderOpen(false);
-    } catch (caught) {
-      setDriveError(
-        caught instanceof Error
-          ? caught.message
-          : "Não foi possível criar a pasta."
-      );
-    } finally {
-      setDriveBusy(false);
-    }
-  }
-
-  async function handleDriveUpload(
-    selectedFiles:
-      FileList | null
-  ) {
-    if (
-      !selectedFiles ||
-      selectedFiles.length === 0
-    ) {
-      return;
-    }
-
-    try {
-      setDriveBusy(true);
-      setDriveError("");
-
-      for (
-        const file of
-        Array.from(selectedFiles)
-      ) {
-        if (
-          file.size >
-          ELISEO_DRIVE_LIMIT_BYTES
-        ) {
-          throw new Error(
-            `${file.name} ultrapassa o limite total de 5 GB.`
-          );
-        }
-
-        let reserved = false;
-        let uploadedKey = "";
-
-        try {
-          await reserveDriveBytes(
-            user.uid,
-            file.size
-          );
-
-          reserved = true;
-
-          const uploaded =
-            await uploadDriveFile(
-              user.uid,
-              file
-            );
-
-          uploadedKey =
-            uploaded.key;
-
-          await createDriveFileRecord(
-            user.uid,
-            currentFolderId,
-            {
-              name: file.name,
-              key: uploaded.key,
-              url: uploaded.url,
-              size:
-                uploaded.size ||
-                file.size,
-              contentType:
-                uploaded.contentType ||
-                file.type ||
-                "application/octet-stream",
-            }
-          );
-        } catch (caught) {
-          if (uploadedKey) {
-            try {
-              await deleteStoredFile(
-                uploadedKey
-              );
-            } catch {
-              // A falha de limpeza não esconde o erro principal.
-            }
-          }
-
-          if (reserved) {
-            try {
-              await releaseDriveBytes(
-                user.uid,
-                file.size
-              );
-            } catch {
-              // Mantém o erro original.
-            }
-          }
-
-          throw caught;
-        }
-      }
-    } catch (caught) {
-      setDriveError(
-        caught instanceof Error
-          ? caught.message
-          : "Não foi possível enviar o arquivo."
-      );
-    } finally {
-      setDriveBusy(false);
-
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-    }
-  }
-
-  return (
-    <div className="main-layout">
-
-      <UserSidebar
-        page="drive"
-        setPage={setPage}
-        profile={profile}
-        onEdit={() =>
-          setPage("profile")
-        }
-      />
-
-      <main className="content-panel drive-panel">
-
-        <header className="section-top drive-topbar">
-          <div className="drive-breadcrumb">
-            {currentFolder && (
-              <button
-                type="button"
-                className="drive-back-button"
-                onClick={goUpFolder}
-                title="Voltar"
-              >
-                <ArrowLeft size={19} />
-              </button>
-            )}
-
-            <div>
-              <strong>
-                Pasta 1
-              </strong>
-
-              {currentFolder && (
-                <>
-                  <span>/</span>
-                  <b>
-                    {currentFolder.name}
-                  </b>
-                </>
-              )}
-            </div>
-          </div>
-
-          <label className="page-search drive-search">
-            <Search size={18} />
-            <input
-              value={searchText}
-              onChange={(event) =>
-                setSearchText(
-                  event.target.value
-                )
-              }
-              placeholder="Buscar arquivos"
-            />
-          </label>
-
-          <input
-            ref={fileInputRef}
-            type="file"
-            multiple
-            className="drive-file-input"
-            onChange={(event) =>
-              handleDriveUpload(
-                event.target.files
-              )
-            }
-          />
-
-          <button
-            type="button"
-            className="drive-header-action"
-            onClick={() => {
-              setDriveError("");
-              setNewFolderOpen(true);
-            }}
-            disabled={driveBusy}
-          >
-            <FolderPlus size={19} />
-            Nova pasta
-          </button>
-
-          <button
-            type="button"
-            className="drive-header-action primary"
-            onClick={() =>
-              fileInputRef.current
-                ?.click()
-            }
-            disabled={driveBusy}
-          >
-            <Upload size={19} />
-            {driveBusy
-              ? "Enviando..."
-              : "Enviar arquivo"}
-          </button>
-
-          <button
-            type="button"
-            className="header-icon-button"
-            onClick={() =>
-              setPage("settings")
-            }
-            title="Configurações"
-          >
-            <MoreHorizontal
-              size={21}
-            />
-          </button>
-        </header>
-
-        <div className="drive-storage-card">
-          <div className="drive-storage-icon">
-            <HardDrive size={22} />
-          </div>
-
-          <div className="drive-storage-copy">
-            <div>
-              <strong>
-                Seu Drive
-              </strong>
-
-              <span>
-                {formatDriveBytes(
-                  usedBytes
-                )} de 5 GB usados
-              </span>
-            </div>
-
-            <div className="drive-storage-track">
-              <i
-                style={{
-                  width:
-                    `${usagePercent}%`,
-                }}
-              />
-            </div>
-          </div>
-
-          <b>
-            {usagePercent.toFixed(1)}%
-          </b>
-        </div>
-
-        {newFolderOpen && (
-          <div className="drive-create-folder-bar">
-            <FolderPlus size={20} />
-
-            <input
-              autoFocus
-              value={newFolderName}
-              onChange={(event) =>
-                setNewFolderName(
-                  event.target.value
-                )
-              }
-              onKeyDown={(event) => {
-                if (
-                  event.key === "Enter"
-                ) {
-                  handleCreateFolder();
-                }
-
-                if (
-                  event.key === "Escape"
-                ) {
-                  setNewFolderOpen(
-                    false
-                  );
-                }
-              }}
-              placeholder="Nome da nova pasta"
-            />
-
-            <button
-              type="button"
-              onClick={handleCreateFolder}
-              disabled={driveBusy}
-            >
-              Criar
-            </button>
-
-            <button
-              type="button"
-              className="secondary"
-              onClick={() => {
-                setNewFolderOpen(false);
-                setNewFolderName("");
-              }}
-            >
-              Cancelar
-            </button>
-          </div>
-        )}
-
-        {driveError && (
-          <div className="drive-error">
-            {driveError}
-          </div>
-        )}
-
-        <div className="drive-grid">
-          {visibleFolders.map(
-            (folder) => (
-              <div
-                role="button"
-                tabIndex={0}
-                className="folder-card drive-folder-card"
-                key={folder.id}
-                onClick={() => {
-                  setCurrentFolderId(
-                    folder.id
-                  );
-                  setSearchText("");
-                }}
-                onKeyDown={(event) => {
-                  if (
-                    event.key === "Enter" ||
-                    event.key === " "
-                  ) {
-                    event.preventDefault();
-                    setCurrentFolderId(
-                      folder.id
-                    );
-                    setSearchText("");
-                  }
-                }}
-              >
-                <button
-                  type="button"
-                  className="drive-card-menu"
-                  onClick={(event) => {
-                    event.stopPropagation();
-                    setPage("settings");
-                  }}
-                  title="Configurações"
-                >
-                  <MoreHorizontal
-                    size={20}
-                  />
-                </button>
-
-                <Folder
-                  className="folder-blue"
-                  size={72}
-                  fill="currentColor"
-                />
-
-                <strong>
-                  {folder.name}
-                </strong>
-
-                <span>
-                  Pasta
-                </span>
-
-                <small>
-                  Abrir pasta
-                </small>
-              </div>
-            )
-          )}
-
-          {visibleFiles.map(
-            (file) => (
-              <DriveFileCard
-                key={file.id}
-                file={file}
-                onOpenSettings={() =>
-                  setPage("settings")
-                }
-              />
-            )
-          )}
-        </div>
-
-        {visibleFolders.length === 0 &&
-          visibleFiles.length === 0 && (
-          <div className="drive-empty-state">
-            <Folder size={42} />
-
-            <strong>
-              {searchText
-                ? "Nada encontrado"
-                : "Esta pasta está vazia"}
-            </strong>
-
-            <span>
-              Crie uma pasta ou envie arquivos para o seu Drive.
-            </span>
-          </div>
-        )}
-
-      </main>
-
-    </div>
-  );
-}
-
-
-function DriveFileCard({
-  file,
-  onOpenSettings,
-}: {
-  file: EliseoDriveFile;
-  onOpenSettings:
-    () => void;
-}) {
-  const type =
-    driveFileType(file);
-
-  return (
-    <div
-      className="file-card drive-real-file"
-      onDoubleClick={() =>
-        window.open(
-          file.url,
-          "_blank",
-          "noopener,noreferrer"
-        )
-      }
-    >
-      <button
-        type="button"
-        className="drive-card-menu"
-        onClick={onOpenSettings}
-        title="Configurações"
-      >
-        <MoreHorizontal
-          size={19}
-        />
-      </button>
-
-      <div
-        className={`file-icon ${type}`}
-      >
-        {type === "image" ? (
-          <FileImage
-            size={37}
-          />
-        ) : (
-          <File size={37} />
-        )}
-      </div>
-
-      <div className="file-text">
-        <strong>
-          {file.name}
-        </strong>
-
-        <span>
-          {formatDriveBytes(
-            file.size
-          )}
-        </span>
-
-        <small>
-          Clique duas vezes para abrir
-        </small>
-      </div>
-    </div>
-  );
-}
-
-
-/* =========================================================
-   PROFILE
-   ========================================================= */
-
-function ProfileView({
-  profile,
-  setPage,
-  onEdit,
-}: {
-  profile:
-    EliseoUser | null;
-
-  setPage:
-    (page: Page) => void;
-
-  onEdit:
-    () => void;
-}) {
-  return (
-    <div className="main-layout">
-
-      <UserSidebar
-        page="profile"
-        setPage={setPage}
-        profile={profile}
-        onEdit={onEdit}
-      />
-
-      <main className="content-panel profile-page">
-
-        <header className="section-top">
-          <h2>
-            Editar Perfil
-          </h2>
-
-          <button
-            className="primary-button"
-            onClick={onEdit}
-          >
-            Salvar alterações
-          </button>
-
-          <button
-            type="button"
-            className="header-icon-button"
-            onClick={() =>
-              setPage("settings")
-            }
-            title="Configurações"
-          >
-            <MoreHorizontal
-              size={21}
-            />
-          </button>
-        </header>
-
-
-        <div className="profile-hero">
-
-          <div className="profile-banner" />
-
-          <div className="profile-gradient">
-
-            <div className="hero-avatar">
-
-              <Avatar
-                user={profile}
-                size="large"
-              />
-
-              <button
-                onClick={onEdit}
-              >
-                <Pencil
-                  size={18}
-                />
-              </button>
-
-            </div>
-
-
-            <h1>
-              {profile?.username ||
-                "Elena"}
-            </h1>
-
-            <h3>
-              @
-              {profile?.username ||
-                "elena"}
-            </h3>
-
-            <p>
-              {profile?.bio ||
-                "Personalize sua bio no Elíseo."}
-            </p>
-
-            <span>
-              Entrou no Elíseo
-            </span>
-
-          </div>
-
-        </div>
-
-
-        <div className="music-card-large">
-
-          <div className="music-service">
-            ▶
-          </div>
-
-          <div>
-            <small>
-              ESCUTANDO AGORA
-            </small>
-
-            <strong>
-              Midnight City
-            </strong>
-
-            <span>
-              M83
-            </span>
-          </div>
-
-          <div className="music-progress">
-            <span>
-              1:24
-            </span>
-
-            <div>
-              <i />
-            </div>
-
-            <span>
-              4:03
-            </span>
-          </div>
-
-        </div>
-
-      </main>
-
-    </div>
-  );
-}
-
-
-/* =========================================================
-   CUSTOMIZATION
-   ========================================================= */
-
-function CustomizeView({
-  profile,
-  setPage,
-}: {
-  profile:
-    EliseoUser | null;
-
-  setPage:
-    (page: Page) => void;
-}) {
-  return (
-    <div className="main-layout">
-
-      <UserSidebar
-        page="customize"
-        setPage={setPage}
-        profile={profile}
-        onEdit={() =>
-          setPage("profile")
-        }
-      />
-
-      <main className="content-panel">
-
-        <div className="content-title-row">
-          <h1>
-            Personalização
-          </h1>
-        </div>
-
-
-        <div className="settings-list">
-
-          <SettingRow
-            icon={
-              <Palette />
-            }
-            title="Cor do aplicativo"
-            subtitle="Escolha a cor principal do aplicativo."
-          >
-            <div className="color-options">
-              <i className="black" />
-              <i className="gray" />
-              <i className="white" />
-
-              <div className="logo-theme dark">
-                <EliseoLogo />
-              </div>
-
-              <div className="logo-theme light active">
-                <EliseoLogo />
-              </div>
-            </div>
-          </SettingRow>
-
-
-          <SettingRow
-            icon={
-              <MessageCircle />
-            }
-            title="Tema do chat"
-            subtitle="Escolha o tema das suas conversas."
-          />
-
-
-          <SettingRow
-            icon={
-              <span className="text-icon">
-                Tᵀ
-              </span>
-            }
-            title="Fonte do aplicativo"
-            subtitle="Altere o tamanho e o estilo da fonte."
-          />
-
-
-          <SettingRow
-            icon={
-              <Menu />
-            }
-            title="Layout"
-            subtitle="Personalize como os conteúdos são exibidos."
-          />
-
-
-          <SettingRow
-            icon={
-              <Bell />
-            }
-            title="Sons e notificações"
-            subtitle="Configure sons, vibrações e alertas."
-          />
-
-
-          <SettingRow
-            icon={
-              <Image />
-            }
-            title="Plano de fundo"
-            subtitle="Escolha ou envie um plano de fundo personalizado."
-          />
-
-
-          <SettingRow
-            icon={
-              <span className="emoji-icon">
-                ☻
-              </span>
-            }
-            title="Emojis e reações"
-            subtitle="Personalize o estilo das reações."
-          />
-
-        </div>
-
-      </main>
-
-    </div>
-  );
-}
-
-
-function SettingRow({
-  icon,
-  title,
-  subtitle,
-  children,
-}: {
-  icon:
-    React.ReactNode;
-
-  title: string;
-
-  subtitle: string;
-
-  children?:
-    React.ReactNode;
-}) {
-  return (
-    <div className="setting-row">
-
-      <div className="setting-icon">
-        {icon}
-      </div>
-
-      <div className="setting-text">
-        <strong>
-          {title}
-        </strong>
-
-        <span>
-          {subtitle}
-        </span>
-      </div>
-
-      {children || (
-        <span className="setting-default">
-          Padrão ›
-        </span>
-      )}
-
-    </div>
-  );
-}
-
-
-/* =========================================================
-   SETTINGS
-   ========================================================= */
-
-function SettingsView({
-  profile,
-  setPage,
-}: {
-  profile:
-    EliseoUser | null;
-
-  setPage:
-    (page: Page) => void;
-}) {
-  return (
-    <div className="main-layout">
-      <UserSidebar
-        page="settings"
-        setPage={setPage}
-        profile={profile}
-        onEdit={() =>
-          setPage("profile")
-        }
-      />
-
-      <main className="content-panel settings-view">
-        <div className="content-title-row">
-          <h1>
-            Configurações
-          </h1>
-        </div>
-
-        <div className="settings-list">
-          <button
-            type="button"
-            className="setting-row settings-link-row"
-            onClick={() =>
-              setPage("customize")
-            }
-          >
-            <div className="setting-icon">
-              <Palette size={25} />
-            </div>
-
-            <div className="setting-text">
-              <strong>
-                Aparência e personalização
-              </strong>
-              <span>
-                Tema, cores, fonte e aparência do Elíseo.
-              </span>
-            </div>
-            <span className="setting-default">
-              ›
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className="setting-row settings-link-row"
-            onClick={() =>
-              setPage("profile")
-            }
-          >
-            <div className="setting-icon">
-              <User size={25} />
-            </div>
-            <div className="setting-text">
-              <strong>
-                Conta e perfil
-              </strong>
-              <span>
-                Informações da sua conta e identidade no app.
-              </span>
-            </div>
-            <span className="setting-default">
-              ›
-            </span>
-          </button>
-
-          <button
-            type="button"
-            className="setting-row settings-link-row"
-            onClick={() =>
-              setPage("finance")
-            }
-          >
-            <div className="setting-icon">
-              <PixLogo size={25} />
-            </div>
-            <div className="setting-text">
-              <strong>
-                PIX e pagamentos
-              </strong>
-              <span>
-                Chave PIX e recursos P2P.
-              </span>
-            </div>
-            <span className="setting-default">
-              ›
-            </span>
-          </button>
-
-          <div className="setting-row">
-            <div className="setting-icon">
-              <Bell size={25} />
-            </div>
-            <div className="setting-text">
-              <strong>
-                Sons e notificações
-              </strong>
-              <span>
-                Controles gerais de alertas do aplicativo.
-              </span>
-            </div>
-            <span className="setting-default">
-              Padrão
-            </span>
-          </div>
-        </div>
-      </main>
     </div>
   );
 }
@@ -3872,6 +2721,8 @@ function App() {
   return (
     <div className="app-shell">
 
+      <DesktopRuntimeBridge uid={user.uid} />
+
       <TopBar
   page={page}
   setPage={setPage}
@@ -4008,35 +2859,28 @@ function App() {
 )}
 
 
-        {page ===
-          "drive" && (
-          <DriveView
+        {page === "drive" && (
+          <DesktopDriveView
+            user={user}
+            onOpenLibrary={() => setPage("library")}
+          />
+        )}
+
+
+        {page === "profile" && (
+          <DesktopProfileView
             user={user}
             profile={profile}
-            setPage={setPage}
+            onEdit={() => setEditingProfile(true)}
+            onNavigate={(destination) => setPage(destination)}
           />
         )}
 
 
-        {page ===
-          "profile" && (
-          <ProfileView
-            profile={profile}
-            setPage={setPage}
-            onEdit={() =>
-              setEditingProfile(
-                true
-              )
-            }
-          />
-        )}
-
-
-        {page ===
-          "customize" && (
-          <CustomizeView
-            profile={profile}
-            setPage={setPage}
+        {page === "customize" && (
+          <DesktopAppearanceView
+            uid={user.uid}
+            onBack={() => setPage("profile")}
           />
         )}
 
@@ -4050,14 +2894,40 @@ function App() {
         )}
 
 
-        {page ===
-          "settings" && (
-          <SettingsView
-            profile={profile}
-            setPage={setPage}
+        {page === "settings" && (
+          <DesktopSettingsView
+            user={user}
+            onNavigate={(destination) => setPage(destination)}
           />
         )}
 
+
+        
+
+        {page === "notifications" && (
+          <DesktopNotificationsView
+            uid={user.uid}
+            onOpenDm={(conversationId) => {
+              setSelectedConversationId(conversationId);
+              setPage("messages");
+            }}
+            onOpenServer={() => setPage("community")}
+          />
+        )}
+
+        {page === "integrations" && (
+          <DesktopIntegrationsView
+            uid={user.uid}
+            onBack={() => setPage("settings")}
+          />
+        )}
+
+        {page === "library" && (
+          <DesktopLibraryView
+            uid={user.uid}
+            onBack={() => setPage("drive")}
+          />
+        )}
 
         {page ===
           "call" && (

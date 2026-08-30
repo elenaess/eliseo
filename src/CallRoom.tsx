@@ -31,6 +31,7 @@ import {
   Mic,
   MicOff,
   MoreHorizontal,
+  MonitorUp,
   PhoneOff,
   UserPlus,
   Video,
@@ -73,6 +74,7 @@ type CallParticipant = {
   micEnabled: boolean;
   cameraEnabled: boolean;
   handRaised: boolean;
+  screenSharing?: boolean;
   joinedAt?: any;
   updatedAt?: any;
 };
@@ -90,6 +92,17 @@ type PeerBundle = {
     Set<string>;
   queuedCandidates:
     RTCIceCandidateInit[];
+};
+
+type ScreenPeerBundle = {
+  pc: RTCPeerConnection;
+  remoteUid: string;
+  remoteSessionId: string;
+  sender: RTCRtpSender | null;
+  stopSignal: Unsubscribe;
+  stopCandidates: Unsubscribe;
+  processedCandidates: Set<string>;
+  queuedCandidates: RTCIceCandidateInit[];
 };
 
 
@@ -743,6 +756,11 @@ function CallRoom({
   const [handRaised, setHandRaised] =
     useState(false);
 
+  /* ELISEO_DESKTOP_SCREEN_SHARE_V1 */
+  const [remoteScreenStreams, setRemoteScreenStreams] = useState<Record<string, MediaStream>>({});
+  const [localScreenStream, setLocalScreenStream] = useState<MediaStream | null>(null);
+  const [screenSharing, setScreenSharing] = useState(false);
+
   const [error, setError] =
     useState("");
 
@@ -760,6 +778,9 @@ function CallRoom({
     useRef<MediaStream>(
       new MediaStream()
     );
+
+  const localScreenStreamRef = useRef<MediaStream | null>(null);
+  const screenPeersRef = useRef<Map<string, ScreenPeerBundle>>(new Map());
 
   const sessionIdRef =
     useRef("");
@@ -902,6 +923,167 @@ function CallRoom({
       },
       []
     );
+
+  const closeScreenPeer =
+    useCallback(
+      (remoteUid: string) => {
+        const bundle = screenPeersRef.current.get(remoteUid);
+        if (!bundle) return;
+
+        bundle.stopSignal();
+        bundle.stopCandidates();
+        bundle.pc.ontrack = null;
+        bundle.pc.onicecandidate = null;
+        bundle.pc.close();
+        screenPeersRef.current.delete(remoteUid);
+
+        setRemoteScreenStreams((current) => {
+          if (!current[remoteUid]) return current;
+          const next = {...current};
+          delete next[remoteUid];
+          return next;
+        });
+      },
+      []
+    );
+
+  const ensureScreenPeer =
+    useCallback(
+      async (remote: CallParticipant) => {
+        if (!sessionIdRef.current || remote.uid === user.uid) return;
+
+        const existing = screenPeersRef.current.get(remote.uid);
+        if (existing && existing.remoteSessionId === remote.sessionId) return;
+        if (existing) closeScreenPeer(remote.uid);
+
+        const pc = new RTCPeerConnection({iceServers: ICE_SERVERS});
+        const initiator = user.uid.localeCompare(remote.uid) < 0;
+        const bundle: ScreenPeerBundle = {
+          pc,
+          remoteUid: remote.uid,
+          remoteSessionId: remote.sessionId,
+          sender: null,
+          stopSignal: () => {},
+          stopCandidates: () => {},
+          processedCandidates: new Set(),
+          queuedCandidates: [],
+        };
+
+        screenPeersRef.current.set(remote.uid, bundle);
+        const remoteScreenStream = new MediaStream();
+        setRemoteScreenStreams((current) => ({...current, [remote.uid]: remoteScreenStream}));
+
+        if (initiator) {
+          const transceiver = pc.addTransceiver("video", {direction: "sendrecv"});
+          bundle.sender = transceiver.sender;
+          await bundle.sender.replaceTrack(
+            localScreenStreamRef.current?.getVideoTracks()[0] || null
+          );
+        }
+
+        pc.ontrack = (event) => {
+          if (event.track.kind !== "video") return;
+          if (!remoteScreenStream.getTracks().some((track) => track.id === event.track.id)) {
+            remoteScreenStream.addTrack(event.track);
+          }
+          setRemoteScreenStreams((current) => ({...current, [remote.uid]: remoteScreenStream}));
+        };
+
+        const basePairId = pairIdFor(
+          user.uid,
+          sessionIdRef.current,
+          remote.uid,
+          remote.sessionId
+        );
+        const pairId = `${basePairId}__screen`;
+        const signalRef = doc(db, "calls", call.roomId, "signals", pairId);
+        const candidatesRef = collection(
+          db, "calls", call.roomId, "signals", pairId, "candidates"
+        );
+
+        async function flushCandidates() {
+          if (!pc.remoteDescription) return;
+          while (bundle.queuedCandidates.length) {
+            const candidate = bundle.queuedCandidates.shift();
+            if (!candidate) continue;
+            try { await pc.addIceCandidate(candidate); } catch {}
+          }
+        }
+
+        bundle.stopSignal = onSnapshot(signalRef, async (snapshot) => {
+          if (!snapshot.exists() || pc.signalingState === "closed") return;
+          const data = snapshot.data() as DocumentData;
+          try {
+            if (!initiator && data.offer && !pc.remoteDescription) {
+              await pc.setRemoteDescription(data.offer);
+              const transceiver = pc.getTransceivers().find(
+                (item) => item.receiver?.track?.kind === "video"
+              );
+              if (transceiver) {
+                transceiver.direction = "sendrecv";
+                bundle.sender = transceiver.sender;
+                await bundle.sender.replaceTrack(
+                  localScreenStreamRef.current?.getVideoTracks()[0] || null
+                );
+              }
+              await flushCandidates();
+              const answer = await pc.createAnswer();
+              await pc.setLocalDescription(answer);
+              await setDoc(signalRef, {
+                answer: serializeDescription(answer),
+                answerFrom: user.uid,
+                updatedAt: serverTimestamp(),
+              }, {merge: true});
+            }
+
+            if (initiator && data.answer && !pc.remoteDescription) {
+              await pc.setRemoteDescription(data.answer);
+              await flushCandidates();
+            }
+          } catch (caught) {
+            console.warn("Falha na sinalização da tela:", caught);
+          }
+        });
+
+        bundle.stopCandidates = onSnapshot(candidatesRef, (snapshot) => {
+          snapshot.docChanges().forEach((change) => {
+            if (change.type !== "added" || bundle.processedCandidates.has(change.doc.id)) return;
+            bundle.processedCandidates.add(change.doc.id);
+            const data = change.doc.data();
+            if (data.from === user.uid) return;
+            const candidate = data.candidate as RTCIceCandidateInit;
+            if (!candidate?.candidate) return;
+            if (pc.remoteDescription) pc.addIceCandidate(candidate).catch(() => {});
+            else bundle.queuedCandidates.push(candidate);
+          });
+        });
+
+        pc.onicecandidate = (event) => {
+          if (!event.candidate) return;
+          addDoc(candidatesRef, {
+            from: user.uid,
+            candidate: serializeCandidate(event.candidate),
+            createdAt: serverTimestamp(),
+          }).catch(() => {});
+        };
+
+        if (initiator) {
+          const offer = await pc.createOffer();
+          await pc.setLocalDescription(offer);
+          await setDoc(signalRef, {
+            aUid: user.uid,
+            bUid: remote.uid,
+            media: "screen",
+            offer: serializeDescription(offer),
+            offerFrom: user.uid,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp(),
+          }, {merge: true});
+        }
+      },
+      [call.roomId, closeScreenPeer, user.uid]
+    );
+
 
 
   const ensurePeer =
@@ -1377,6 +1559,11 @@ function CallRoom({
           closePeer
         );
 
+        Array.from(screenPeersRef.current.keys()).forEach(closeScreenPeer);
+
+        localScreenStreamRef.current?.getTracks().forEach((track) => track.stop());
+        localScreenStreamRef.current = null;
+
         localStreamRef.current
           .getTracks()
           .forEach(
@@ -1657,6 +1844,7 @@ function CallRoom({
             cameraEnabled:
               actualCamera,
             handRaised: false,
+            screenSharing: false,
             joinedAt:
               serverTimestamp(),
             updatedAt:
@@ -1736,6 +1924,7 @@ function CallRoom({
               ensurePeer(
                 remote
               );
+              ensureScreenPeer(remote);
             }
 
             Array.from(
@@ -1759,6 +1948,7 @@ function CallRoom({
                   closePeer(
                     remoteUid
                   );
+                  closeScreenPeer(remoteUid);
                 }
               }
             );
@@ -1811,6 +2001,63 @@ function CallRoom({
         timer
       );
   }, []);
+
+  async function stopScreenShare() {
+    const stream = localScreenStreamRef.current;
+    stream?.getTracks().forEach((track) => {
+      track.onended = null;
+      track.stop();
+    });
+    localScreenStreamRef.current = null;
+    setLocalScreenStream(null);
+
+    await Promise.all(
+      Array.from(screenPeersRef.current.values()).map((bundle) =>
+        bundle.sender?.replaceTrack(null) ?? Promise.resolve()
+      )
+    );
+
+    setScreenSharing(false);
+    await updateMyParticipant({screenSharing: false}).catch(() => {});
+  }
+
+  async function toggleScreenShare() {
+    if (screenSharing) {
+      await stopScreenShare();
+      return;
+    }
+
+    try {
+      setError("");
+      if (!navigator.mediaDevices?.getDisplayMedia) {
+        throw new Error("Seu navegador não oferece compartilhamento de tela.");
+      }
+
+      const stream = await navigator.mediaDevices.getDisplayMedia({video: true, audio: false});
+      const track = stream.getVideoTracks()[0];
+      if (!track) return;
+
+      localScreenStreamRef.current = stream;
+      setLocalScreenStream(new MediaStream(stream.getTracks()));
+
+      await Promise.all(
+        Array.from(screenPeersRef.current.values()).map((bundle) =>
+          bundle.sender?.replaceTrack(track) ?? Promise.resolve()
+        )
+      );
+
+      track.onended = () => { void stopScreenShare(); };
+      setScreenSharing(true);
+      await updateMyParticipant({screenSharing: true});
+    } catch (caught) {
+      setError(
+        caught instanceof Error
+          ? caught.message
+          : "Não foi possível compartilhar a tela."
+      );
+    }
+  }
+
 
 
   async function toggleCamera() {
@@ -2051,6 +2298,7 @@ function CallRoom({
           micEnabled,
           cameraEnabled,
           handRaised,
+          screenSharing,
         };
 
       const others =
@@ -2264,6 +2512,43 @@ function CallRoom({
             );
           }
         )}
+      
+
+        {orderedParticipants
+          .filter((participant) =>
+            participant.uid === user.uid
+              ? screenSharing
+              : !!participant.screenSharing
+          )
+          .map((participant) => {
+            const mine = participant.uid === user.uid;
+            const stream = mine
+              ? localScreenStream
+              : remoteScreenStreams[participant.uid] || null;
+
+            return (
+              <article
+                className="el-call-card camera-on sharing-screen screen-share-card"
+                key={`screen-${participant.uid}-${participant.sessionId}`}
+              >
+                <StreamVideo
+                  stream={stream}
+                  muted
+                  mirrored={false}
+                  className="el-call-video"
+                />
+                <div className="el-call-card-chips">
+                  <span className="el-call-chip screen">
+                    <MonitorUp size={16} />
+                    Compartilhando tela
+                  </span>
+                </div>
+                <strong className="el-call-participant-name">
+                  {participant.username} · tela
+                </strong>
+              </article>
+            );
+          })}
       </section>
 
 
@@ -2302,6 +2587,15 @@ function CallRoom({
               speakerEnabled
             }
             withChevron
+          />
+
+          
+
+          <ControlButton
+            icon={<MonitorUp />}
+            label={screenSharing ? "Parar compartilhamento" : "Compartilhar tela"}
+            onClick={toggleScreenShare}
+            active={screenSharing}
           />
 
           <div className="el-call-control-divider" />
