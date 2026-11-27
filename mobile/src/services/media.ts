@@ -3,6 +3,7 @@ import {
   collection,
   doc,
   getDoc,
+  limit,
   onSnapshot,
   orderBy,
   query,
@@ -107,6 +108,7 @@ export function listenToMediaPosts(
         'createdAt',
         'desc',
       ),
+      limit(50),
     );
 
   return onSnapshot(
@@ -146,6 +148,10 @@ export function listenToMediaPosts(
           },
         ),
       );
+    },
+    error => {
+      console.warn('[Psiu Firestore] listenToMediaPosts', error.code ?? error.message);
+      callback([]);
     },
   );
 }
@@ -256,6 +262,10 @@ export function listenToMediaMessages(
         ),
       );
     },
+    error => {
+      console.warn('[Psiu Firestore] listenToMediaMessages', error.code ?? error.message);
+      callback([]);
+    },
   );
 }
 
@@ -316,6 +326,10 @@ export function listenToMediaChannelMessages(
           },
         ),
       );
+    },
+    error => {
+      console.warn('[Psiu Firestore] listenToMediaChannelMessages', error.code ?? error.message);
+      callback([]);
     },
   );
 }
