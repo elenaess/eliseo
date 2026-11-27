@@ -89,8 +89,8 @@ android {
         applicationId "com.eliseo.app"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 1
-        versionName "0.1.0-alpha"
+        versionCode 2
+        versionName "0.1.1-alpha"
     }
     signingConfigs {
         debug {
@@ -117,6 +117,9 @@ android {
             // see https://reactnative.dev/docs/signed-apk-android.
             if (keystorePropertiesFile.exists()) {
                 signingConfig signingConfigs.release
+            } else if (System.getenv('CI') == 'true') {
+                // Installable QA artifact only; production must use its original release key.
+                signingConfig signingConfigs.debug
             }
             minifyEnabled enableProguardInReleaseBuilds
             proguardFiles getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro"
