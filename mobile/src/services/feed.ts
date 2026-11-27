@@ -145,6 +145,10 @@ export function listenToPosts(
 
       callback(posts);
     },
+    error => {
+      console.warn('[Psiu Firestore] listenToPosts', error.code ?? error.message);
+      callback([]);
+    },
   );
 }
 
@@ -249,6 +253,10 @@ export function listenToRepostCount(
         snapshot.size,
       );
     },
+    error => {
+      console.warn('[Psiu Firestore] listenToRepostCount', error.code ?? error.message);
+      callback(0);
+    },
   );
 }
 
@@ -324,6 +332,10 @@ export function listenToPostLikes(
         snapshot.size,
         likedByMe,
       );
+    },
+    error => {
+      console.warn('[Psiu Firestore] listenToPostLikes', error.code ?? error.message);
+      callback(0, false);
     },
   );
 }
@@ -415,6 +427,10 @@ export function listenToComments(
       callback(
         comments,
       );
+    },
+    error => {
+      console.warn('[Psiu Firestore] listenToComments', error.code ?? error.message);
+      callback([]);
     },
   );
 }
