@@ -152,6 +152,16 @@ type PostEngagement = {
    TEMPO
    ========================================================= */
 
+async function safeUserById(uid: string | null | undefined) {
+  if (typeof uid !== 'string' || !uid.trim() || uid.includes('/')) return null;
+  try {
+    return await getUserById(uid);
+  } catch (error) {
+    console.warn('[Psiu feed] Perfil indisponível', error);
+    return null;
+  }
+}
+
 function formatTime(
   timestamp: any,
 ) {
@@ -159,7 +169,7 @@ function formatTime(
     timestamp
       ?.toDate?.();
 
-  if (!date) {
+  if (!(date instanceof Date) || !Number.isFinite(date.getTime())) {
     return 'Agora';
   }
 
@@ -323,9 +333,7 @@ function FeedPost({
                   ...item,
 
                   author:
-                    await getUserById(
-                      item.authorId,
-                    ),
+                    await safeUserById(item.authorId),
                 }),
               ),
             );
@@ -994,30 +1002,30 @@ export function FeedScreen({
   ]);
 
   useEffect(() => {
-    let alive =
-      true;
+    if (!currentUid) return;
+    let alive = true;
+    let generation = 0;
 
     const unsubscribe =
       listenToMediaPosts(
         async incoming => {
+          const batch = ++generation;
           const hydrated =
             await Promise.all(
               incoming.map(
                 async post => {
                   const author =
-                    await getUserById(
-                      post.authorId,
-                    );
+                    await safeUserById(post.authorId);
 
                   const originalAuthor =
                     post.repostAuthorId
-                      ? await getUserById(
-                          post.repostAuthorId,
-                        )
+                      ? await safeUserById(post.repostAuthorId)
                       : null;
 
                   return {
                     ...post,
+                    text: typeof post.text === 'string' ? post.text : '',
+                    imageUrl: typeof post.imageUrl === 'string' ? post.imageUrl : '',
 
                     createdAt:
                       post.createdAt ??
@@ -1032,7 +1040,7 @@ export function FeedScreen({
             );
 
           if (
-            alive
+            alive && batch === generation
           ) {
             setPosts(
               hydrated,
@@ -1047,11 +1055,12 @@ export function FeedScreen({
 
       unsubscribe();
     };
-  }, []);
+  }, [currentUid]);
 
   useEffect(() => {
     if (
       !currentUid ||
+      feedMode !== 'trending' ||
       posts.length === 0
     ) {
       setEngagement({});
@@ -1172,6 +1181,7 @@ export function FeedScreen({
   }, [
     currentUid,
     posts,
+    feedMode,
   ]);
 
   const visiblePosts =
@@ -1187,20 +1197,16 @@ export function FeedScreen({
             ? posts
             : posts.filter(
                 post =>
-                  post.text
+                  String(post.text ?? '')
                     .toLowerCase()
                     .includes(
                       clean,
                     ) ||
-                  post.author
-                    ?.username
-                    .toLowerCase()
+                  String(post.author?.username ?? '').toLowerCase()
                     .includes(
                       clean,
                     ) ||
-                  post.originalAuthor
-                    ?.username
-                    .toLowerCase()
+                  String(post.originalAuthor?.username ?? '').toLowerCase()
                     .includes(
                       clean,
                     ),
