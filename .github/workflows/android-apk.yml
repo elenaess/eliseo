@@ -1,10 +1,14 @@
-﻿name: Elíseo
+name: Elíseo
 
 on:
   workflow_dispatch:
   push:
     branches:
       - main
+
+concurrency:
+  group: android-apk-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -31,12 +35,28 @@ jobs:
         working-directory: mobile
         run: npm ci
 
+      - name: Usar JDK local no plugin React Native
+        working-directory: mobile
+        run: |
+          java -version
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('node_modules/@react-native/gradle-plugin/settings.gradle.kts')
+          source = p.read_text()
+          patched, count = re.subn(r'^\s*id\("org\.gradle\.toolchains\.foojay-resolver-convention"\)[^\n]*\n', '\n', source, flags=re.M)
+          if count != 1:
+              raise SystemExit(f'Expected exactly one Foojay declaration, got {count}')
+          p.write_text(patched)
+          print('Using locally installed JDK instead of remote Foojay resolver.')
+          PY
+
       - name: Liberar Gradle
         run: chmod +x mobile/android/gradlew
 
       - name: Gerar APK
         working-directory: mobile/android
-        run: ./gradlew assembleRelease --stacktrace
+        run: ./gradlew assembleRelease --stacktrace --no-daemon -Porg.gradle.java.installations.auto-download=false
 
       - name: Salvar APK
         uses: actions/upload-artifact@v4
