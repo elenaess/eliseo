@@ -10,8 +10,6 @@ import {
   onIdTokenChanged,
 } from '@react-native-firebase/auth';
 
-import {startPushForUser, stopPushListeners} from '../services/push';
-import {startMusicPresenceSync, stopMusicPresenceSync} from '../services/music';
 import {colors} from '../theme';
 import type {RootStackParamList} from '../types/navigation';
 
@@ -20,19 +18,6 @@ import {
   useAppAppearance,
 } from '../context/AppAppearanceContext';
 
-import {AppearanceScreen} from '../screens/AppearanceScreen';
-import {BookReaderScreen} from '../screens/BookReaderScreen';
-import {CallScreen} from '../screens/CallScreen';
-import {ChatScreen} from '../screens/ChatScreen';
-import {FinanceScreen} from '../screens/FinanceScreen';
-import {IntegrationsScreen} from '../screens/IntegrationsScreen';
-import {LoginScreen} from '../screens/LoginScreen';
-import {NotificationsScreen} from '../screens/NotificationsScreen';
-import {PasswordResetScreen} from '../screens/PasswordResetScreen';
-import {ServerScreen} from '../screens/ServerScreen';
-import {SettingsScreen} from '../screens/SettingsScreen';
-import {VerifyEmailScreen} from '../screens/VerifyEmailScreen';
-import {MainTabs} from './MainTabs';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
 const auth = getAuth();
@@ -78,48 +63,48 @@ function NavigatorContent({
           <>
             <Stack.Screen
               name="Login"
-              component={LoginScreen}
+              getComponent={() => require('../screens/LoginScreen').LoginScreen}
               options={{animation: 'fade'}}
             />
             <Stack.Screen
               name="PasswordReset"
-              component={PasswordResetScreen}
+              getComponent={() => require('../screens/PasswordResetScreen').PasswordResetScreen}
               options={{animation: 'slide_from_bottom'}}
             />
           </>
         ) : needsVerification ? (
           <Stack.Screen
             name="VerifyEmail"
-            component={VerifyEmailScreen}
+            getComponent={() => require('../screens/VerifyEmailScreen').VerifyEmailScreen}
             options={{animation: 'fade', gestureEnabled: false}}
           />
         ) : (
           <>
             <Stack.Screen
               name="Main"
-              component={MainTabs}
+              getComponent={() => require('./MainTabs').MainTabs}
               options={{animation: 'fade', gestureEnabled: false}}
             />
-            <Stack.Screen name="Server" component={ServerScreen}/>
-            <Stack.Screen name="Chat" component={ChatScreen}/>
+            <Stack.Screen name="Server" getComponent={() => require('../screens/ServerScreen').ServerScreen}/>
+            <Stack.Screen name="Chat" getComponent={() => require('../screens/ChatScreen').ChatScreen}/>
             <Stack.Screen
               name="Call"
-              component={CallScreen}
+              getComponent={() => require('../screens/CallScreen').CallScreen}
               options={{animation: 'fade_from_bottom'}}
             />
-            <Stack.Screen name="Finance" component={FinanceScreen}/>
-            <Stack.Screen name="Appearance" component={AppearanceScreen}/>
-            <Stack.Screen name="Notifications" component={NotificationsScreen}/>
-            <Stack.Screen name="Settings" component={SettingsScreen}/>
-            <Stack.Screen name="Integrations" component={IntegrationsScreen}/>
+            <Stack.Screen name="Finance" getComponent={() => require('../screens/FinanceScreen').FinanceScreen}/>
+            <Stack.Screen name="Appearance" getComponent={() => require('../screens/AppearanceScreen').AppearanceScreen}/>
+            <Stack.Screen name="Notifications" getComponent={() => require('../screens/NotificationsScreen').NotificationsScreen}/>
+            <Stack.Screen name="Settings" getComponent={() => require('../screens/SettingsScreen').SettingsScreen}/>
+            <Stack.Screen name="Integrations" getComponent={() => require('../screens/IntegrationsScreen').IntegrationsScreen}/>
             <Stack.Screen
               name="PasswordReset"
-              component={PasswordResetScreen}
+              getComponent={() => require('../screens/PasswordResetScreen').PasswordResetScreen}
               options={{animation: 'slide_from_bottom'}}
             />
             <Stack.Screen
               name="BookReader"
-              component={BookReaderScreen}
+              getComponent={() => require('../screens/BookReaderScreen').BookReaderScreen}
               options={{animation: 'slide_from_right'}}
             />
           </>
@@ -135,10 +120,14 @@ export function RootNavigator() {
   const [needsVerification, setNeedsVerification] = useState(false);
 
   useEffect(() => {
+    let active = true;
+    let serviceTimer: ReturnType<typeof setTimeout> | undefined;
+    let stopOptionalServices = () => {};
     const unsubscribe = onIdTokenChanged(auth, user => {
+      if (serviceTimer) clearTimeout(serviceTimer);
+      stopOptionalServices();
+      stopOptionalServices = () => {};
       if (!user) {
-        stopMusicPresenceSync();
-        stopPushListeners();
         setSignedIn(false);
         setNeedsVerification(false);
         setInitializing(false);
@@ -153,18 +142,36 @@ export function RootNavigator() {
       setSignedIn(true);
       setNeedsVerification(!verified);
 
-      if (verified) {
-        void startPushForUser(user.uid);
-        startMusicPresenceSync(user.uid);
-      } else {
-        stopMusicPresenceSync();
-        stopPushListeners();
-      }
-
       setInitializing(false);
+      if (verified) {
+        serviceTimer = setTimeout(() => {
+          if (!active || auth.currentUser?.uid !== user.uid) return;
+          const stops: Array<() => void> = [];
+          stopOptionalServices = () => {
+            for (const stop of stops) {
+              try { stop(); } catch (error) { console.warn('[Psiu] service cleanup', error); }
+            }
+          };
+          try {
+            const push = require('../services/push');
+            stops.push(push.stopPushListeners);
+            Promise.resolve(push.startPushForUser(user.uid)).catch(error => console.warn('[Psiu] push', error));
+          } catch (error) { console.warn('[Psiu] push unavailable', error); }
+          try {
+            const music = require('../services/music');
+            stops.push(music.stopMusicPresenceSync);
+            music.startMusicPresenceSync(user.uid);
+          } catch (error) { console.warn('[Psiu] music unavailable', error); }
+        }, 500);
+      }
     });
 
-    return unsubscribe;
+    return () => {
+      active = false;
+      if (serviceTimer) clearTimeout(serviceTimer);
+      stopOptionalServices();
+      unsubscribe();
+    };
   }, []);
 
   if (initializing) {
