@@ -103,6 +103,10 @@ export function listenToAppPreferences(
         ),
       );
     },
+    error => {
+      console.warn('[Psiu Firestore] listenToAppPreferences', error.code ?? error.message);
+      callback(DEFAULT_APP_PREFERENCES);
+    },
   );
 }
 
