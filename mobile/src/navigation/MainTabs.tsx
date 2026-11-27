@@ -25,25 +25,10 @@ import {
   FastTabLoader,
 } from '../components/FastTabLoader';
 
-import {
-  CommunitiesScreen,
-} from '../screens/CommunitiesScreen';
 
-import {
-  DriveScreen,
-} from '../screens/DriveScreen';
 
-import {
-  FeedScreen,
-} from '../screens/FeedScreen';
 
-import {
-  MessagesScreen,
-} from '../screens/MessagesScreen';
 
-import {
-  ProfileScreen,
-} from '../screens/ProfileScreen';
 
 import {
   useAppAppearance,
@@ -149,33 +134,27 @@ export function MainTabs() {
       >
         <Tab.Screen
           name="Feed"
-          component={FeedScreen}
+          getComponent={() => require('../screens/FeedScreen').FeedScreen}
         />
 
         <Tab.Screen
           name="Communities"
-          component={
-            CommunitiesScreen
-          }
+          getComponent={() => require('../screens/CommunitiesScreen').CommunitiesScreen}
         />
 
         <Tab.Screen
           name="Messages"
-          component={
-            MessagesScreen
-          }
+          getComponent={() => require('../screens/MessagesScreen').MessagesScreen}
         />
 
         <Tab.Screen
           name="Drive"
-          component={DriveScreen}
+          getComponent={() => require('../screens/DriveScreen').DriveScreen}
         />
 
         <Tab.Screen
           name="Profile"
-          component={
-            ProfileScreen
-          }
+          getComponent={() => require('../screens/ProfileScreen').ProfileScreen}
         />
       </Tab.Navigator>
 
