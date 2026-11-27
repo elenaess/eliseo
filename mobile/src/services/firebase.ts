@@ -291,6 +291,10 @@ export function listenToUserProfile(
           '',
       });
     },
+    error => {
+      console.warn('[Psiu Firestore] listenToUserProfile', error.code ?? error.message);
+      callback(null);
+    },
   );
 }
 
@@ -1190,6 +1194,10 @@ export function listenToUserServers(
       callback(
         servers,
       );
+    },
+    error => {
+      console.warn('[Psiu Firestore] listenToUserServers', error.code ?? error.message);
+      callback([]);
     },
   );
 }
